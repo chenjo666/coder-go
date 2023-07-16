@@ -38,12 +38,23 @@ public class Response<T> {
             return this;
         }
 
+        public ResponseBuilder<T> notContent() {
+            this.code = 204;
+            this.msg = "Not Content";
+            return this;
+        }
         public ResponseBuilder<T> badRequest() {
             this.code = 400;
             this.msg = "Bad Request";
             return this;
         }
 
+
+        public ResponseBuilder<T> notFound() {
+            this.code = 404;
+            this.msg = "Not Found";
+            return this;
+        }
         public Response<T> build() {
             Response<T> response = new Response<>();
             response.code = this.code;

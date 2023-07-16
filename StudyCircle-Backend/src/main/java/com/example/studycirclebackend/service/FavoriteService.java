@@ -15,4 +15,8 @@ public interface FavoriteService extends IService<Favorite> {
     boolean isFavorite(Long userId, Long postId);
 
 
+    void createPostCollect(Long postId, Long userId);
+    void deletePostCollect(Long postId, Long userId);
+    Long getPostCollectTotal(Long postId);
+    boolean isCollectPostByUser(Long postId, Long userId);
 }

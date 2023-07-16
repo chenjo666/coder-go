@@ -5,14 +5,17 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.studycirclebackend.dao.LikeMapper;
 import com.example.studycirclebackend.dto.Event;
 import com.example.studycirclebackend.dto.Response;
+import com.example.studycirclebackend.enums.CommentObjectType;
 import com.example.studycirclebackend.enums.ResponseCode;
 import com.example.studycirclebackend.enums.ResponseMsg;
 import com.example.studycirclebackend.event.EventProducer;
 import com.example.studycirclebackend.pojo.Like;
 import com.example.studycirclebackend.service.LikeService;
+import com.example.studycirclebackend.util.RedisUtil;
 import com.example.studycirclebackend.util.UserUtil;
 import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,19 +24,19 @@ public class LikeServiceImpl extends ServiceImpl<LikeMapper, Like> implements Li
     private UserUtil userUtil;
     @Resource
     private EventProducer eventProducer;
+    @Resource
+    private RedisTemplate<String, Object> redisTemplate;
     @Override
     public Response createLike(Long objectId, String objectType) {
         if (objectId == null || StringUtils.isBlank(objectType)) {
-            return Response.builder()
-                    .code(ResponseCode.FAILURE.getValue())
-                    .msg(ResponseMsg.ERROR_PARAMETER.getValue())
-                    .build();
+            return Response.builder().badRequest().build();
         }
         Like like = new Like();
         like.setUserId(userUtil.getUser().getId());
         like.setObjectId(objectId);
         like.setObjectType(objectType);
-        boolean result = save(like);
+        // 1）mysql
+        save(like);
 
         // 点赞
         Event event = Event.builder()
@@ -44,9 +47,7 @@ public class LikeServiceImpl extends ServiceImpl<LikeMapper, Like> implements Li
                 .build();;
         eventProducer.createEvent(event);
 
-        return Response.builder()
-                .code(result ? ResponseCode.SUCCESS.getValue() : ResponseCode.FAILURE.getValue())
-                .build();
+        return Response.builder().ok().build();
     }
 
     @Override
@@ -91,5 +92,51 @@ public class LikeServiceImpl extends ServiceImpl<LikeMapper, Like> implements Li
         return one != null;
     }
 
+    @Override
+    public void createPostLike(Long postId, Long userId) {
+        String key = RedisUtil.getPostLikeKey(postId);
+        redisTemplate.opsForSet().add(key, userId);
+    }
 
+    @Override
+    public void createCommentLike(Long commentId, Long userId) {
+        String key = RedisUtil.getCommentLikeKey(commentId);
+        redisTemplate.opsForSet().add(key, userId);
+    }
+
+    @Override
+    public void deletePostLike(Long postId, Long userId) {
+        String key = RedisUtil.getPostLikeKey(postId);
+        redisTemplate.opsForSet().remove(key, userId);
+    }
+
+    @Override
+    public void deleteCommentLike(Long commentId, Long userId) {
+        String key = RedisUtil.getCommentLikeKey(commentId);
+        redisTemplate.opsForSet().remove(key, userId);
+    }
+
+    @Override
+    public Long getPostLikeTotal(Long postId) {
+        String key = RedisUtil.getPostLikeKey(postId);
+        return redisTemplate.opsForSet().size(key);
+    }
+
+    @Override
+    public Long getCommentLikeTotal(Long commentId) {
+        String key = RedisUtil.getCommentLikeKey(commentId);
+        return redisTemplate.opsForSet().size(key);
+    }
+
+    @Override
+    public boolean isLikePostByUser(Long postId, Long userId) {
+        String key = RedisUtil.getPostLikeKey(postId);
+        return Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(key, userId));
+    }
+
+    @Override
+    public boolean isLikeCommentByUser(Long commentId, Long userId) {
+        String key = RedisUtil.getCommentLikeKey(commentId);
+        return Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(key, userId));
+    }
 }

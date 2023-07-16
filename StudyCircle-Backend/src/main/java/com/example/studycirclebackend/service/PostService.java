@@ -44,4 +44,25 @@ public interface PostService extends IService<Post> {
     Integer getPostTotal(String type, String order, String key);
     // 转换对象
     PostOverviewVO convertToPostOverviewVO(Post post);
+
+
+    /**
+     * 帖子的点赞业务
+     */
+    Response likePost(Long postId);
+
+    /**
+     * 帖子的取消点赞业务
+     */
+    Response dislikePost(Long postId);
+
+    /**
+     * 帖子的收藏业务
+     */
+    Response collectPost(Long postId);
+    /**
+     * 帖子的取消收藏业务
+     */
+    Response unCollectPost(Long postId);
+
 }

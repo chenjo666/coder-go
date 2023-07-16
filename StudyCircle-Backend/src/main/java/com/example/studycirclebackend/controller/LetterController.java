@@ -4,12 +4,10 @@ import com.example.studycirclebackend.dto.Response;
 import com.example.studycirclebackend.enums.ResponseCode;
 import com.example.studycirclebackend.service.BlockedLetterService;
 import com.example.studycirclebackend.service.LetterService;
-import com.example.studycirclebackend.service.TicketService;
 import com.example.studycirclebackend.util.DataUtil;
 import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.*;
-import retrofit2.http.Path;
 
 import java.util.Date;
 import java.util.Map;

@@ -15,6 +15,7 @@ import com.example.studycirclebackend.service.TicketService;
 import com.example.studycirclebackend.service.UserService;
 import com.example.studycirclebackend.util.DataUtil;
 import com.example.studycirclebackend.util.EmailUtil;
+import com.example.studycirclebackend.util.RedisUtil;
 import com.example.studycirclebackend.util.UserUtil;
 import com.example.studycirclebackend.vo.UserVO;
 import jakarta.annotation.Resource;
@@ -23,6 +24,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -33,16 +35,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Resource
     private TicketService ticketService;
     @Resource
-    private EmailUtil emailUtil;
-    @Resource
     private EventProducer eventProducer;
+    @Resource
+    private RedisTemplate<String, Object> redisTemplate;
     @Override
     public Response login(String email, String password, HttpServletResponse response) {
         if (StringUtils.isBlank(email) || StringUtils.isBlank(password)) {
-            return Response.builder()
-                    .code(ResponseCode.FAILURE.getValue())
-                    .msg(ResponseMsg.ERROR_PARAMETER.getValue())
-                    .build();
+            return Response.builder().badRequest().build();
         }
         User user = getOne(new QueryWrapper<User>().eq("email", email));
         if (user == null) {
@@ -62,7 +61,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         // 登录成功
         String token = DataUtil.generateUUID();
-        Cookie cookie = saveToken(token, user.getId());
+        Cookie cookie = ticketService.createTicket(token, user.getId());
+
         response.addCookie(cookie);
 
         logger.info("user login: " + user);
@@ -76,11 +76,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public Response register(String email, String password, String code, HttpServletResponse response) {
-        if (email == null || password == null || code == null) {
-            return Response.builder()
-                    .code(ResponseCode.FAILURE.getValue())
-                    .msg(ResponseMsg.ERROR_PARAMETER.getValue())
-                    .build();
+        if (StringUtils.isBlank(email) || StringUtils.isBlank(password)  || StringUtils.isBlank(password)) {
+            return Response.builder().badRequest().build();
         }
         User user = getOne(new QueryWrapper<User>().eq("email", email).eq("activation_code", code));
         if (user == null) {
@@ -95,7 +92,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         updateById(user);
 
         // 保存 token
-        Cookie cookie = saveToken(token, user.getId());
+        Cookie cookie = ticketService.createTicket(token, user.getId());
         response.addCookie(cookie);
 
         logger.info("/user/register: " + email);
@@ -105,10 +102,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public Response activate(String email) {
         if (email == null) {
-            return Response.builder()
-                    .code(ResponseCode.FAILURE.getValue())
-                    .msg(ResponseMsg.ERROR_PARAMETER.getValue())
-                    .build();
+            return Response.builder().badRequest().build();
         }
         User user = getOne(new QueryWrapper<User>().eq("email", email));
         // 用户已经注册并且已经激活
@@ -117,7 +111,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         // 用户注册但未激活
         String uuidCode = DataUtil.generateUUID();
-
 
         // 普通发送邮件
 //        emailUtil.send(email, "您正在注册学友圈账号，这是您的验证码", uuidCode);
@@ -146,42 +139,27 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public Response logout(String token) {
-        if (token == null) {
-            return Response.builder()
-                    .code(ResponseCode.FAILURE.getValue())
-                    .msg(ResponseMsg.ERROR_PARAMETER.getValue())
-                    .build();
+        if (StringUtils.isBlank(token)) {
+            return Response.builder().badRequest().build();
         }
-        Ticket ticket = ticketService.getOne(new QueryWrapper<Ticket>().eq("token", token));
+        Ticket ticket = ticketService.getTicket(token);
         if (ticket == null) {
-            return Response.builder().code(-1).msg("账户不存在！").build();
+            return Response.builder().notContent().build();
         }
         ticket.setIsValid(0);
-        ticketService.updateById(ticket);
+        // 1）mysql 更新 key
+        //ticketService.updateById(ticket);
+        // 2）redis 删除 key
+        String key = RedisUtil.getTicketKey(token);
+        redisTemplate.delete(key);
+
         logger.info("/user/logout: " + ticket.getUserId());
-        return Response.builder().code(200).msg("退出登录成功，用户已退出登录！").build();
+        return Response.builder().ok().build();
     }
 
     @Override
     public UserVO convertToVO(User user) {
-        UserVO userVO = new UserVO(user.getId(), user.getUsername(), user.getAvatar());
-        return null;
+        return new UserVO(user.getId(), user.getUsername(), user.getAvatar());
     }
 
-    private Cookie saveToken(String token, Long userId) {
-        // 生成登录凭证
-        Cookie cookie = new Cookie("token", token);
-        cookie.setMaxAge(3600 * 24 * 30); // 30天
-        cookie.setPath("/"); // 设置 cookie 的作用路径，根路径下的所有页面都可以访问该 cookie
-
-        // 生成一个登录凭证关联 token
-        Ticket ticket = new Ticket();
-        ticket.setToken(token);
-        ticket.setUserId(userId);
-        ticket.setIsValid(1);
-        ticket.setExpire(new Date(System.currentTimeMillis() + 3600L * 24 * 30 * 1000));
-        ticketService.save(ticket);
-
-        return cookie;
-    }
 }

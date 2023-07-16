@@ -12,13 +12,16 @@ import com.example.studycirclebackend.pojo.Follow;
 import com.example.studycirclebackend.pojo.User;
 import com.example.studycirclebackend.service.FollowService;
 import com.example.studycirclebackend.service.UserService;
+import com.example.studycirclebackend.util.RedisUtil;
 import com.example.studycirclebackend.util.UserUtil;
 import com.example.studycirclebackend.vo.UserVO;
 import jakarta.annotation.Resource;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 
 @Service
@@ -30,6 +33,8 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
     private UserService userService;
     @Resource
     private EventProducer eventProducer;
+    @Resource
+    private RedisTemplate<String, Object> redisTemplate;
     @Override
     public Response createFollow(Long userId) {
         if (userId == null) {
@@ -128,5 +133,39 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
                 .code(ResponseCode.SUCCESS.getValue())
                 .data(userVOList)
                 .build();
+    }
+
+    @Override
+    public void createFollow(Long userFromId, Long userToId) {
+        String followingKey = RedisUtil.getUserFOLLOWINGKey(userFromId);
+        redisTemplate.opsForSet().add(followingKey, userToId);
+        String followerKey = RedisUtil.getUserFollowerKey(userToId);
+        redisTemplate.opsForSet().add(followerKey, userFromId);
+    }
+
+    @Override
+    public void deleteFollow(Long userFromId, Long userToId) {
+        String followingKey = RedisUtil.getUserFOLLOWINGKey(userFromId);
+        redisTemplate.opsForSet().remove(followingKey, userToId);
+        String followerKey = RedisUtil.getUserFollowerKey(userToId);
+        redisTemplate.opsForSet().remove(followerKey, userFromId);
+    }
+
+    @Override
+    public boolean isFollowedByUser(Long userFromId, Long userToId) {
+        String key = RedisUtil.getUserFOLLOWINGKey(userFromId);
+        return Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(key, userToId));
+    }
+
+    @Override
+    public Set<Object> getUserFollowers(Long userId) {
+        String key = RedisUtil.getUserFollowerKey(userId);
+        return redisTemplate.opsForSet().members(key);
+    }
+
+    @Override
+    public Set<Object> getUserFollowings(Long userId) {
+        String key = RedisUtil.getUserFOLLOWINGKey(userId);
+        return redisTemplate.opsForSet().members(key);
     }
 }

@@ -1,17 +1,10 @@
 package com.example.studycirclebackend.controller;
 
 import com.example.studycirclebackend.dto.Response;
-import com.example.studycirclebackend.enums.CommentObjectType;
-import com.example.studycirclebackend.pojo.Comment;
-import com.example.studycirclebackend.pojo.Post;
-import com.example.studycirclebackend.pojo.User;
 import com.example.studycirclebackend.service.*;
-import com.example.studycirclebackend.vo.PostOverviewVO;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
-import retrofit2.http.Path;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -117,4 +110,43 @@ public class PostController {
         return postService.getPosts(postType, orderMode, keyWord, currentPage, pageSize);
     }
 
+
+    /**
+     * 新点赞帖子业务
+     * @param postId
+     * @return
+     */
+    @PostMapping("/v1/{postId}/likes")
+    public Response createPostLike(@PathVariable("postId") Long postId) {
+        return postService.likePost(postId);
+    }
+
+    /**
+     * 新取消点赞帖子业务
+     * @param postId
+     * @return
+     */
+    @DeleteMapping("/v1/{postId}/likes")
+    public Response deletePostLike(@PathVariable("postId") Long postId) {
+        return postService.dislikePost(postId);
+    }
+    /**
+     * 新收藏帖子业务
+     * @param postId
+     * @return
+     */
+    @PostMapping("/v1/{postId}/collects")
+    public Response createPostCollect(@PathVariable("postId") Long postId) {
+        return postService.collectPost(postId);
+    }
+
+    /**
+     * 新取消收藏帖子业务
+     * @param postId
+     * @return
+     */
+    @DeleteMapping("/v1/{postId}/collects")
+    public Response deletePostCollect(@PathVariable("postId") Long postId) {
+        return postService.unCollectPost(postId);
+    }
 }

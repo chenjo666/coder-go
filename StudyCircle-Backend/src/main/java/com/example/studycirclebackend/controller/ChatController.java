@@ -22,7 +22,7 @@ public class ChatController {
 
     @RequestMapping(path = "/chat/question",method = RequestMethod.GET)
     public Response openAiChat(@RequestParam("question")String question){
-        if (StringUtils.isBlank(question)){
+        if (StringUtils.isBlank(question)) {
             return Response.builder()
                     .code(ResponseCode.FAILURE.getValue())
                     .msg(ResponseMsg.NULL_OBJECT.getValue())

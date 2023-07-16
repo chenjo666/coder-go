@@ -324,6 +324,8 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         return postOverviewVO;
     }
 
+
+
     /**
      * 构建查询条件（辅助【得到帖子总览对象】）
      */
@@ -435,6 +437,41 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     }
 
 
+    @Override
+    public Response likePost(Long postId) {
+        if (postId == null || userUtil.getUser().getId() == null) {
+            return Response.builder().badRequest().build();
+        }
+        likeService.createPostLike(postId, userUtil.getUser().getId());
+        return Response.builder().ok().build();
+    }
+
+    @Override
+    public Response dislikePost(Long postId) {
+        if (postId == null || userUtil.getUser().getId() == null) {
+            return Response.builder().badRequest().build();
+        }
+        likeService.deletePostLike(postId, userUtil.getUser().getId());
+        return Response.builder().ok().build();
+    }
+
+    @Override
+    public Response collectPost(Long postId) {
+        if (postId == null || userUtil.getUser().getId() == null) {
+            return Response.builder().badRequest().build();
+        }
+        favoriteService.createPostCollect(postId, userUtil.getUser().getId());
+        return Response.builder().ok().build();
+    }
+
+    @Override
+    public Response unCollectPost(Long postId) {
+        if (postId == null || userUtil.getUser().getId() == null) {
+            return Response.builder().badRequest().build();
+        }
+        favoriteService.deletePostCollect(postId, userUtil.getUser().getId());
+        return Response.builder().ok().build();
+    }
     // 综合排序（官方=>置顶=>普通，按分数）
     // SELECT * FROM post
     // WHERE type = 【postType】

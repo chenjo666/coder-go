@@ -1,8 +1,7 @@
 package com.example.studycirclebackend.config;
 
-import com.example.studycirclebackend.controller.interceptor.TokenInterceptor;
+import com.example.studycirclebackend.controller.interceptor.TicketInterceptor;
 import jakarta.annotation.Resource;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -28,7 +27,7 @@ public class CorsConfig implements WebMvcConfigurer {
     }
 
     @Resource
-    private TokenInterceptor tokenInterceptor;
+    private TicketInterceptor tokenInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {

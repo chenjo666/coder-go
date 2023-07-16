@@ -10,8 +10,10 @@ import com.example.studycirclebackend.enums.ResponseMsg;
 import com.example.studycirclebackend.event.EventProducer;
 import com.example.studycirclebackend.pojo.Favorite;
 import com.example.studycirclebackend.service.FavoriteService;
+import com.example.studycirclebackend.util.RedisUtil;
 import com.example.studycirclebackend.util.UserUtil;
 import jakarta.annotation.Resource;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 
@@ -21,6 +23,8 @@ public class FavoriteServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> i
     private UserUtil userUtil;
     @Resource
     private EventProducer eventProducer;
+    @Resource
+    private RedisTemplate<String, Object> redisTemplate;
     @Override
     public Response createFavorite(Long postId) {
         if (postId == null) {
@@ -78,6 +82,30 @@ public class FavoriteServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> i
             return false;
         }
         return getOne(new QueryWrapper<Favorite>().eq("user_id", userId).eq("post_id",postId)) != null;
+    }
+
+    @Override
+    public void createPostCollect(Long postId, Long userId) {
+        String key = RedisUtil.getPostCollectKey(postId);
+        redisTemplate.opsForSet().add(key, userId);
+    }
+
+    @Override
+    public void deletePostCollect(Long postId, Long userId) {
+        String key = RedisUtil.getPostCollectKey(postId);
+        redisTemplate.opsForSet().remove(key, userId);
+    }
+
+    @Override
+    public Long getPostCollectTotal(Long postId) {
+        String key = RedisUtil.getPostCollectKey(postId);
+        return redisTemplate.opsForSet().size(key);
+    }
+
+    @Override
+    public boolean isCollectPostByUser(Long postId, Long userId) {
+        String key = RedisUtil.getPostCollectKey(postId);
+        return Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(key, userId));
     }
 
 }

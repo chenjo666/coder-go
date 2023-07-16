@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref, nextTick, onBeforeUnmount } from 'vue'
-import { Search, MuteNotification, Share, Edit, Position, Picture, Delete } from '@element-plus/icons-vue'
+import { Search, MuteNotification, Share, Position, Picture, Delete } from '@element-plus/icons-vue'
 import IconEmoji from "./icons/IconEmoji.vue"
-import { ElMessage, useForwardRefDirective } from 'element-plus'
-import { ElScrollbar } from 'element-plus'
+import { ElMessage, ElScrollbar } from 'element-plus'
 import axios from 'axios';
 /******************************************* 工具区 *************************************************/
 const successMsg = (msg) => {
@@ -129,10 +128,9 @@ const user = JSON.parse(localStorage.getItem("user") ?? '');
 let socket: WebSocket | null = null;
 /******************************************* 事件区 *************************************************/
 
-// 切换私信列表
+// （1）切换私信列表
 const clickChangeLetterEvent = (index) => {
     activeLetterIndex.value = index
-    console.log(activeLetterIndex.value, UIVO.value.letterOverviewVOList[activeLetterIndex.value].userId)
     getLetterDetailRequest(UIVO.value.letterOverviewVOList[activeLetterIndex.value].userId)
         .then(res => {
             if (res != null) {
@@ -145,7 +143,7 @@ const clickChangeLetterEvent = (index) => {
         })
 
 }
-// 点击发送私信
+// （2）点击发送私信
 // 界面新增一个 LetterDetailVO
 const clickSendLetterEvent = () => {
     // 构建请求参数
@@ -164,48 +162,58 @@ const clickSendLetterEvent = () => {
     // 清空输入框
     letterContent.value = ''
 }
-// 回车发送私信
+// （3）回车发送私信
 const enterSendLetterEvent = (event) => {
     if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault()
         clickSendLetterEvent()
     }
-}
-// 删除私信事件
-// 请求，并返回操作结果
+}  
+/**（4）删除私信事件
+ *  如果删除的私信不是自身，私信列表减少一个即可
+ *      否则，私信列表删除当前私信会话，并优先返回上一个私信
+ *          如果上一个私信不存在，则返回下一个私信记录
+ *          如果下一个私信记录不存在，则清空聊天框
+ *      否则返回到上一个私信记录
+ * @param index 
+ */
 const clickDeleteLetterEvent = (index) => {
     deleteLetterRequest(UIVO.value.letterOverviewVOList[index].userId)
         .then(res => {
             if (res) {
+                // 删除当前私信
                 UIVO.value.letterOverviewVOList.splice(index, 1)
-
-                // 删除私信，
-                // 如果私信不是自身，取消弹窗即可
-                // 否则，默认返回到上一个私信记录
-                //      如果没上一个私信记录，则返回到下一个私信记录
-                //      如果没有下一个私信记录，则为 -1
-                if (index == activeLetterIndex.value) {
-                    if (index == 0) {
-                        if (UIVO.value.letterOverviewVOList.length == 1) {
-                            activeLetterIndex.value = -1
-                        } else {
-                            activeLetterIndex.value++
-                        }
-                    } else {
-                        activeLetterIndex.value--;
-                    }
-                    if (activeLetterIndex.value != -1) {
-                        clickChangeLetterEvent(activeLetterIndex.value)
-                    }
-                }
                 // 取消弹窗
                 hidePopover()
+                // 移动索引
+
+                //  删除的私信记录不是当前私信记录，则返回
+                if (index !== activeLetterIndex.value) {
+                    return;
+                }
+
+                //  否则如果自身为最后一个索引，清空聊天框
+                if (UIVO.value.letterOverviewVOList.length === 1) {
+                    activeLetterIndex.value = -1
+                    UIVO.value.letterDetailVOList = []
+                    return;
+                }
+
+                //  如果当前索引不为 0，则移动到上一个索引
+                if (index !== 0) {
+                    //  移动到上一个索引
+                    activeLetterIndex.value--;
+                } else {
+                    activeLetterIndex.value++;
+                }
+
+                clickChangeLetterEvent(activeLetterIndex.value)
             }
         }).catch(err => {
             console.log(err)
         })
 }
-// 屏蔽私信事件
+// （5）屏蔽私信事件
 const clickBlockedLetterEvent = (index) => {
     const blockedUserId = UIVO.value.letterOverviewVOList[index].userId
     if (UIVO.value.letterOverviewVOList[index].block) {
@@ -232,7 +240,7 @@ const clickBlockedLetterEvent = (index) => {
     // 关闭弹出框
     hidePopover()
 }
-// 处理回复私信事件
+// （6）处理回复私信事件
 const handleResponse = (data) => {
     const userId = data.userId;
     // 对方恰好是私信对方
@@ -317,7 +325,6 @@ const getLetterAllRequest = () => {
             return null
         });
 }
-
 // 2. 查询私信详情请求
 const getLetterDetailRequest = (userId) => {
     return axios.get(`/letters/${userId}/messages`)
@@ -339,7 +346,6 @@ const getLetterDetailRequest = (userId) => {
             return null
         });
 }
-
 // 3. 发送私信请求
 const sendLetterRequest = (userFromId, userToId, content, date) => {
     console.log(userFromId)
