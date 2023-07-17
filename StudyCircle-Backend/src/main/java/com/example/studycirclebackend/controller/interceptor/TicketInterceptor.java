@@ -44,13 +44,10 @@ private RedisTemplate<String, Object> redisTemplate;
                     // 检验 token
                     if (token != null) {
                         // 得到 ticket
-                        // 1) mysql 获取 ticket
-//                      Ticket ticket = ticketService.getOne(new QueryWrapper<Ticket>().eq("token", token));
-                        // 2) redis 获取 ticket
                         Ticket ticket = ticketService.getTicket(token);
 
                         // 存储 user（ticket存在，ticket有效，ticket没有过期）
-                        if (ticket != null && ticket.getIsValid() == 1 && ticket.getExpire().after(new Date())) {
+                        if (ticket != null && ticket.getIsValid() == 1) {
                             User user = userService.getById(ticket.getUserId());
                             userUtil.setUser(user);
                             logger.info("login: " + user);

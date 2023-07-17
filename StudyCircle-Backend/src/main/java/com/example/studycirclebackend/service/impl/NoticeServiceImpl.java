@@ -41,7 +41,7 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
             return false;
         }
         Long userId = userUtil.getUser().getId();
-        return remove(new QueryWrapper<Notice>().eq("user_receiver_id", userId));
+        return remove(new QueryWrapper<Notice>().eq("user_to_id", userId));
     }
 
     @Override
@@ -50,58 +50,6 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
             return false;
         }
         return removeById(noticeId);
-    }
-
-
-    @Override
-    public boolean createLikeNotice(Long userFromId, Long objectId, String objectType) {
-        if (CommentObjectType.POST.getValue().equals(objectType)) {
-            Post post = postService.getById(objectId);
-            return createNotice(userFromId,
-                    post.getUserId(),
-                    NoticeType.LIKE_POST.getValue(),
-                    post.getId());
-        } else {
-            Comment comment = commentService.getById(objectId);
-            return createNotice(userFromId,
-                    comment.getUserId(),
-                    NoticeType.LIKE_COMMENT.getValue(),
-                    commentService.getPostIdByCommentId(comment.getId()));
-        }
-    }
-
-    @Override
-    public boolean createCommentNotice(Long userFromId, Long objectId, String objectType) {
-        if (CommentObjectType.POST.getValue().equals(objectType)) {
-            Post post = postService.getById(objectId);
-            return createNotice(userFromId,
-                    post.getUserId(),
-                    NoticeType.REPLY_POST.getValue(),
-                    post.getId());
-        } else {
-            Comment comment = commentService.getById(objectId);
-            return createNotice(userFromId,
-                    comment.getUserId(),
-                    NoticeType.REPLY_COMMENT.getValue(),
-                    commentService.getPostIdByCommentId(comment.getId()));
-        }
-    }
-
-    @Override
-    public boolean createFavoriteNotice(Long userFromId, Long postId) {
-        Post post = postService.getById(postId);
-        return createNotice(userFromId,
-                post.getUserId(),
-                NoticeType.FAVORITE_POST.getValue(),
-                postId);
-    }
-
-    @Override
-    public boolean createFollowNotice(Long userFromId, Long userToId) {
-        return createNotice(userFromId,
-                userToId,
-                NoticeType.FOLLOW_USER.getValue(),
-                null);
     }
 
     @Override
@@ -124,7 +72,7 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
         }
         Map<String, Object> data = new HashMap<>();
         List<Notice> notices = list(new QueryWrapper<Notice>()
-                .eq("user_receiver_id", userUtil.getUser().getId())
+                .eq("user_to_id", userUtil.getUser().getId())
                 .orderByDesc("notice_time")
                 .last(String.format("LIMIT %d,%d", (currentPage - 1) * pageSize, pageSize)));
         if (notices == null) {
@@ -141,13 +89,13 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
         updateBatchById(notices);
         // 帖子总数
         long count = count(new QueryWrapper<Notice>()
-                .eq("user_receiver_id", userUtil.getUser().getId()));
+                .eq("user_to_id", userUtil.getUser().getId()));
         // 帖子总未读量
         long unRead = count(new QueryWrapper<Notice>()
-                .eq("user_receiver_id", userUtil.getUser().getId())
+                .eq("user_to_id", userUtil.getUser().getId())
                 .eq("is_read", 0));
         data.put("noticeTotal", (int) count);
-        data.put("noticeUnRead",(int) unRead);
+        data.put("noticeUnRead", (int) unRead);
         data.put("noticeVOList", noticeVOList);
         return Response.builder().code(200).data(data).build();
     }
@@ -172,4 +120,51 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
         }
         return noticeVO;
     }
+
+    @Override
+    public boolean createLikePostNotice(Long postId, Long userId) {
+        Post post = postService.getById(postId);
+        return createNotice(userId,
+                post.getUserId(),
+                NoticeType.LIKE_POST.getValue(),
+                post.getId());
+    }
+
+    @Override
+    public boolean createLikeCommentNotice(Long commentId, Long userId) {
+        Comment comment = commentService.getById(commentId);
+        return createNotice(userId,
+                comment.getUserId(),
+                NoticeType.LIKE_COMMENT.getValue(),
+                commentService.getPostIdByCommentId(comment.getId()));
+    }
+
+    @Override
+    public boolean createReplyPostNotice(Long postId, Long userId) {
+        return false;
+    }
+
+    @Override
+    public boolean createReplyCommentNotice(Long commentId, Long userId) {
+
+        return false;
+    }
+
+    @Override
+    public boolean createCollectPostNotice(Long postId, Long userId) {
+        Post post = postService.getById(postId);
+        return createNotice(userId,
+                post.getUserId(),
+                NoticeType.FAVORITE_POST.getValue(),
+                postId);
+    }
+
+    @Override
+    public boolean createFollowUserNotice(Long userFromId, Long userToId) {
+        return createNotice(userFromId,
+                userToId,
+                NoticeType.FOLLOW_USER.getValue(),
+                null);
+    }
+
 }

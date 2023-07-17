@@ -35,4 +35,16 @@ public interface CommentService extends IService<Comment> {
      */
     Long getPostIdByCommentId(Long commentId);
 
+
+
+    /**
+     * 评论的点赞业务
+     */
+    Response likeComment(Long commentId);
+
+    /**
+     * 评论的取消点赞业务
+     */
+    Response dislikeComment(Long commentId);
+
 }

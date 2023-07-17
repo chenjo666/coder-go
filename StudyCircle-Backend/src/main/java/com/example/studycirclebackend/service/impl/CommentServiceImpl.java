@@ -5,10 +5,9 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.studycirclebackend.dao.CommentMapper;
 import com.example.studycirclebackend.dao.UserMapper;
-import com.example.studycirclebackend.dto.Event;
 import com.example.studycirclebackend.dto.Response;
 import com.example.studycirclebackend.enums.*;
-import com.example.studycirclebackend.event.EventProducer;
+import com.example.studycirclebackend.event.*;
 import com.example.studycirclebackend.pojo.Comment;
 import com.example.studycirclebackend.pojo.User;
 import com.example.studycirclebackend.service.CommentService;
@@ -76,8 +75,8 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
                 commentVO.setCommentScore(comment.getScore());
                 // 点赞
 
-                long count = likeService.getLikeCountByObject(comment.getId(), CommentObjectType.COMMENT.getValue());
-                boolean isLike = likeService.isLikedByUser(userUtil.getUser().getId(), comment.getId(), CommentObjectType.COMMENT.getValue());
+                long count = likeService.getCommentLikeTotal(comment.getId());
+                boolean isLike = likeService.isLikeCommentByUser(comment.getId(), userUtil.getUser().getId());
                 commentVO.setCommentLikes(Math.toIntExact(count));
                 commentVO.setLike(isLike);
                 // 子评论
@@ -110,13 +109,20 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         comment.setScore(0);
         boolean result = save(comment);
         // 评论事件
-        Event event = Event.builder()
-                .topic("comment")
-                .userFromId(userUtil.getUser().getId())
-                .objectId(objectId)
-                .objectType(objectType)
-                .build();
-        eventProducer.createEvent(event);
+        if (objectType.equals(CommentObjectType.POST.getValue())) {
+            Event event = new ReplyPostEvent(Topic.COMMENT, NoticeType.REPLY_POST.getValue(), objectId, userUtil.getUser().getId());
+            eventProducer.createEvent(event);
+        } else {
+            Event event = new ReplyCommentEvent(Topic.COMMENT, NoticeType.REPLY_COMMENT.getValue(), objectId, userUtil.getUser().getId());
+            eventProducer.createEvent(event);
+        }
+//        Event event = Event.builder()
+//                .topic("comment")
+//                .userFromId(userUtil.getUser().getId())
+//                .objectId(objectId)
+//                .objectType(objectType)
+//                .build();
+////        eventProducer.createEvent(event);
 
         return Response.builder()
                 .code(result ? ResponseCode.SUCCESS.getValue() : ResponseCode.FAILURE.getValue())
@@ -140,10 +146,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     @Override
     public Response setComment(Long commentId, String newContent) {
         if (commentId == null || StringUtils.isBlank(newContent)) {
-            return Response.builder()
-                    .code(ResponseCode.FAILURE.getValue())
-                    .msg(ResponseMsg.ERROR_PARAMETER.getValue())
-                    .build();
+            return Response.builder().badRequest().build();
         }
 
         boolean result = update(new UpdateWrapper<Comment>().set("content", newContent).eq("id", commentId));
@@ -155,10 +158,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     @Override
     public Response updateComment(Long commentId, String newContent) {
         if (commentId == null || StringUtils.isBlank(newContent)) {
-            return Response.builder()
-                    .code(400)
-                    .msg("Bad Request")
-                    .build();
+            return Response.builder().badRequest().build();
         }
 
         boolean result = update(new UpdateWrapper<Comment>().set("content", newContent).eq("id", commentId));
@@ -189,8 +189,8 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         commentVO.setCommentTime(DataUtil.formatDateTime(comment.getCommentTime()));
         commentVO.setCommentContent(comment.getContent());
         // 点赞服务
-        long count = likeService.getLikeCountByObject(comment.getId(), CommentObjectType.COMMENT.getValue());
-        boolean isLike = likeService.isLikedByUser(userUtil.getUser().getId(), comment.getId(), CommentObjectType.COMMENT.getValue());
+        long count = likeService.getCommentLikeTotal(comment.getId());
+        boolean isLike = likeService.isLikeCommentByUser(comment.getId(), userUtil.getUser().getId());
         commentVO.setCommentLikes(Math.toIntExact(count));
         commentVO.setLike(isLike);
 
@@ -259,8 +259,8 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
             commentVO.setCommentTime(DataUtil.formatDateTime(comment.getCommentTime()));
             commentVO.setCommentContent(comment.getContent());
 
-            long count = likeService.getLikeCountByObject(comment.getId(), CommentObjectType.COMMENT.getValue());
-            boolean isLike = likeService.isLikedByUser(userUtil.getUser().getId(), comment.getId(), CommentObjectType.COMMENT.getValue());
+            long count = likeService.getCommentLikeTotal(comment.getId());
+            boolean isLike = likeService.isLikeCommentByUser(comment.getId(), userUtil.getUser().getId());
             commentVO.setCommentLikes(Math.toIntExact(count));
             commentVO.setLike(isLike);
             commentVO.setCommentScore(comment.getScore());
@@ -283,5 +283,23 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
             return comment.getObjectId();
         }
         return getPostIdByCommentId(comment.getObjectId());
+    }
+
+    @Override
+    public Response likeComment(Long commentId) {
+        if (commentId == null || userUtil.getUser() == null) {
+            return Response.builder().badRequest().build();
+        }
+        likeService.createCommentLike(commentId, userUtil.getUser().getId());
+        return Response.builder().ok().build();
+    }
+
+    @Override
+    public Response dislikeComment(Long commentId) {
+        if (commentId == null || userUtil.getUser() == null) {
+            return Response.builder().badRequest().build();
+        }
+        likeService.deleteCommentLike(commentId, userUtil.getUser().getId());
+        return Response.builder().ok().build();
     }
 }

@@ -70,4 +70,16 @@ public class CommentController {
         String content = map.get("content");
         return commentService.addComment(objectId, objectType, content);
     }
+
+
+    @PostMapping("/v1/{commentId}/likes")
+    public Response createCommentLike(@PathVariable("commentId") Long commentId) {
+        return commentService.likeComment(commentId);
+    }
+
+    @DeleteMapping("/v1/{commentId}/likes")
+    public Response deleteCommentLike(@PathVariable("commentId") Long commentId) {
+        return commentService.dislikeComment(commentId);
+    }
+
 }

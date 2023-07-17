@@ -3,7 +3,7 @@ package com.example.studycirclebackend.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.studycirclebackend.dto.Response;
 import com.example.studycirclebackend.pojo.Letter;
-import com.example.studycirclebackend.server.LetterRequest;
+import com.example.studycirclebackend.websocket.LetterRequest;
 import com.example.studycirclebackend.vo.LetterOverviewVO;
 
 import java.util.Date;

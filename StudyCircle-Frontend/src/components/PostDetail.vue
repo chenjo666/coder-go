@@ -254,15 +254,29 @@ const clickLikeEvent = (objectId, objectType, parentIndex, childIndex) => {
             postDetailVO.value.parentCommentListVO[parentIndex].childCommentListVO[childIndex].like = !postDetailVO.value.parentCommentListVO[parentIndex].childCommentListVO[childIndex].like
         }
     }
-    if (isLike) {
-        unlikeRequest(objectId, objectType)
+    if (isLike && objectType == 'post') {
+        dislikePostRequest(objectId)
             .then(res => {
                 console.log('like it');
             }).catch(err => {
                 console.log(err)
             })
-    } else {
-        likeRequest(objectId, objectType)
+    } else if (isLike && objectType == 'comment') {
+        dislikeCommentRequest(objectId)
+            .then(res => {
+                console.log('like it');
+            }).catch(err => {
+                console.log(err)
+            })
+    } else if (!isLike && objectType == 'post') {
+        likePostRequest(objectId)
+            .then(res => {
+                console.log('like it');
+            }).catch(err => {
+                console.log(err)
+            })
+    } else if (!isLike && objectType == 'comment') {
+        likeCommentRequest(objectId)
             .then(res => {
                 console.log('like it');
             }).catch(err => {
@@ -325,6 +339,7 @@ const clickOrderEvent = (ordermode: string) => {
             console.log(err)
         })
 }
+
 /******************************************************* 请求区 *******************************************************/
 // （0）刷新界面请求：传入帖子 id，返回帖子全部信息（默认第一页）
 const getPostDetailRequest = (postId: string) => {
@@ -347,7 +362,7 @@ const getPostDetailRequest = (postId: string) => {
 }
 // （1）添加关注请求，参数为对方 id
 const followRequest = (userId: string) => {
-    return axios.post(`/users/following/${userId}`)
+    return axios.post(`/users/v1/following/${userId}`)
         .then(response => {
             if (response.status !== 200) {
                 errorMsg('网络请求出错!')
@@ -368,7 +383,7 @@ const followRequest = (userId: string) => {
 }
 // （2）取消关注请求，参数为对方 id
 const unfollowRequest = (userId: string) => {
-    return axios.delete(`/users/following/${userId}`)
+    return axios.delete(`/users/v1/following/${userId}`)
         .then(response => {
             if (response.status !== 200) {
                 errorMsg('网络请求出错!')
@@ -389,7 +404,7 @@ const unfollowRequest = (userId: string) => {
 }
 // （3）添加收藏请求，参数为帖子 id
 const favoriteRequest = (postId: string) => {
-    return axios.post("/posts/favorites", {  postId })
+    return axios.post(`/posts/v1/${postId}/collects`)
         .then(response => {
             if (response.status !== 200) {
                 errorMsg('网络请求出错!')
@@ -410,49 +425,7 @@ const favoriteRequest = (postId: string) => {
 }
 //  (4) 取消收藏请求，参数为帖子 id
 const unfavoriteRequest = (postId: string) => {
-    return axios.delete(`/posts/favorites/${postId}`)
-        .then(response => {
-            if (response.status !== 200) {
-                errorMsg('网络请求出错!')
-                return false
-            }
-            const ans = response.data
-
-            if (ans.code !== 200) {
-                errorMsg(ans.msg)
-                return false
-            }
-            return true
-        })
-        .catch(error => {
-            console.error(error);
-            return false
-        });
-}
-// （5）添加点赞请求：传入帖子id或评论id，传入帖子类型或评论类型
-const likeRequest = (objectId: string, objectType: string) => {
-    return axios.post("/likes",  { objectId, objectType } )
-        .then(response => {
-            if (response.status !== 200) {
-                errorMsg('网络请求出错!')
-                return false
-            }
-            const ans = response.data
-
-            if (ans.code !== 200) {
-                errorMsg(ans.msg)
-                return false
-            }
-            return true
-        })
-        .catch(error => {
-            console.error(error);
-            return false
-        });
-}
-//  (6) 取消点赞请求：传入帖子id或评论id，传入帖子类型或评论类型
-const unlikeRequest = (objectId: string, objectType: string) => {
-    return axios.delete(`/likes/${objectType}/${objectId}`)
+    return axios.delete(`/posts/v1/${postId}/collects`)
         .then(response => {
             if (response.status !== 200) {
                 errorMsg('网络请求出错!')
@@ -539,6 +512,92 @@ const delCommentRequest = (commentId: string) => {
         });
 }
 
+
+
+// (v1.1) 点赞帖子请求：
+const likePostRequest = (postId) => {
+    return axios.post(`/posts/v1/${postId}/likes`)
+        .then(response => {
+            if (response.status !== 200) {
+                errorMsg('网络请求出错!')
+                return false
+            }
+            const ans = response.data
+
+            if (ans.code !== 200) {
+                errorMsg(ans.msg)
+                return false
+            }
+            return true
+        })
+        .catch(error => {
+            console.error(error);
+            return false
+        });
+}
+// (v1.2) 取消点赞帖子请求：
+const dislikePostRequest = (postId) => {
+    return axios.delete(`/posts/v1/${postId}/likes`)
+        .then(response => {
+            if (response.status !== 200) {
+                errorMsg('网络请求出错!')
+                return false
+            }
+            const ans = response.data
+
+            if (ans.code !== 200) {
+                errorMsg(ans.msg)
+                return false
+            }
+            return true
+        })
+        .catch(error => {
+            console.error(error);
+            return false
+        });
+}
+// (v1.3) 点赞评论请求：
+const likeCommentRequest = (commentId) => {
+    return axios.post(`/comments/v1/${commentId}/likes`)
+        .then(response => {
+            if (response.status !== 200) {
+                errorMsg('网络请求出错!')
+                return false
+            }
+            const ans = response.data
+
+            if (ans.code !== 200) {
+                errorMsg(ans.msg)
+                return false
+            }
+            return true
+        })
+        .catch(error => {
+            console.error(error);
+            return false
+        });
+}
+// (v1.4) 取消点赞评论请求：
+const dislikeCommentRequest = (commentId) => {
+    return axios.delete(`/comments/v1/${commentId}/likes`)
+        .then(response => {
+            if (response.status !== 200) {
+                errorMsg('网络请求出错!')
+                return false
+            }
+            const ans = response.data
+
+            if (ans.code !== 200) {
+                errorMsg(ans.msg)
+                return false
+            }
+            return true
+        })
+        .catch(error => {
+            console.error(error);
+            return false
+        });
+}
 </script>
 
 <template>

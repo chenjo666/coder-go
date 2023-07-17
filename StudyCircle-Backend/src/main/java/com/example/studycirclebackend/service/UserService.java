@@ -15,5 +15,12 @@ public interface UserService extends IService<User> {
 
     Response logout(String token);
 
-    UserVO convertToVO(User user);
+    UserVO getUserVO(User user);
+
+
+    Response followUser(Long targetUserId);
+    Response unFollowUser(Long targetUserId);
+    Response getUserFollowings(Long userId);
+    Response getUserFollowers(Long userId);
+
 }

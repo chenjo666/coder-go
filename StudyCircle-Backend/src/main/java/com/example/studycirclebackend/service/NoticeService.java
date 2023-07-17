@@ -14,14 +14,16 @@ public interface NoticeService extends IService<Notice> {
     boolean deleteSingleNotice(Long noticeId);
 
 
-    boolean createLikeNotice(Long userFromId, Long objectId, String objectType);
-    boolean createCommentNotice(Long userFromId, Long objectId, String objectType);
-    boolean createFavoriteNotice(Long userFromId, Long postId);
-    boolean createFollowNotice(Long userFromId, Long userToId);
-
     boolean createNotice(Long userFromId, Long userToId, Integer noticeType, Long postId);
 
     Response getNotice(Integer currentPage, Integer pageSize);
 
     NoticeVO convertToNoticeVO(Notice notice);
+
+    boolean createLikePostNotice(Long postId, Long userId);
+    boolean createLikeCommentNotice(Long commentId, Long userId);
+    boolean createReplyPostNotice(Long postId, Long userId);
+    boolean createReplyCommentNotice(Long commentId, Long userId);
+    boolean createCollectPostNotice(Long postId, Long userId);
+    boolean createFollowUserNotice(Long userFromId, Long userToId);
 }

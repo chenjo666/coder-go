@@ -6,7 +6,8 @@ public enum NoticeType {
     REPLY_POST(3),
     REPLY_COMMENT(4),
     FAVORITE_POST(5),
-    FOLLOW_USER(6);
+    FOLLOW_USER(6),
+    SEND_MAIL(7);
     private final int value;
 
     NoticeType(int value) {

@@ -1,11 +1,11 @@
 package com.example.studycirclebackend.event;
 
 import com.alibaba.fastjson2.JSONObject;
-import com.example.studycirclebackend.dto.Event;
-import com.example.studycirclebackend.dto.MailEvent;
+import com.example.studycirclebackend.enums.NoticeType;
 import com.example.studycirclebackend.service.NoticeService;
 import com.example.studycirclebackend.util.EmailUtil;
 import jakarta.annotation.Resource;
+import net.sf.jsqlparser.statement.select.Top;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,50 +23,66 @@ public class EventConsumer {
     private EmailUtil emailUtil;
 
     @KafkaListener(topics = Topic.LIKE)
-    public void handlerLikeNotice(ConsumerRecord record) {
+    public void handleLikeTopic(ConsumerRecord record) {
         if (!checkRecord(record)) {
             return;
         }
-        Event event = JSONObject.parseObject(record.value().toString(), Event.class);
-        logger.info("like: {}", event);
-        Long userFromId = event.getUserFromId();
-        Long objectId =  event.getObjectId();
-        String objectType =  event.getObjectType();
-        noticeService.createLikeNotice(userFromId, objectId, objectType);
+        JSONObject jsonObject = JSONObject.parseObject(record.value().toString());
+        int noticeType = jsonObject.getInteger("noticeType");
+        logger.info("like: {}", jsonObject);
+        if (noticeType == NoticeType.LIKE_POST.getValue()) {
+            LikePostEvent likePostEvent = jsonObject.toJavaObject(LikePostEvent.class);
+            Long postId = likePostEvent.getPostId();
+            Long userId = likePostEvent.getUserId();
+            noticeService.createLikePostNotice(postId, userId);
+        } else {
+            LikeCommentEvent likeCommentEvent = jsonObject.toJavaObject(LikeCommentEvent.class);
+            Long commentId = likeCommentEvent.getCommentId();
+            Long userId = likeCommentEvent.getUserId();
+            noticeService.createLikeCommentNotice(commentId, userId);
+        }
     }
     @KafkaListener(topics = Topic.COMMENT)
-    public void handlerCommentEvent(ConsumerRecord record) {
+    public void handleCommentEvent(ConsumerRecord record) {
         if (!checkRecord(record)) {
             return;
         }
-        Event event = JSONObject.parseObject(record.value().toString(), Event.class);
-        logger.info("comment: {}", event);
-        Long userFromId = event.getUserFromId();
-        Long objectId =  event.getObjectId();
-        String objectType =  event.getObjectType();
-        noticeService.createCommentNotice(userFromId, objectId, objectType);
+        JSONObject jsonObject = JSONObject.parseObject(record.value().toString());
+        int noticeType = jsonObject.getInteger("noticeType");
+        logger.info("comment: {}", jsonObject);
+        if (noticeType == NoticeType.REPLY_POST.getValue()) {
+            ReplyPostEvent event0 = jsonObject.toJavaObject(ReplyPostEvent.class);
+            Long postId = event0.getPostId();
+            Long userId = event0.getUserId();
+            noticeService.createReplyPostNotice(postId, userId);
+        } else {
+            ReplyCommentEvent event0 = jsonObject.toJavaObject(ReplyCommentEvent.class);
+            Long commentId = event0.getCommentId();
+            Long userId = event0.getUserId();
+            noticeService.createReplyCommentNotice(commentId, userId);
+        }
     }
-    @KafkaListener(topics = Topic.FAVORITE)
-    public void handlerFavoriteEvent(ConsumerRecord record) {
+    @KafkaListener(topics = Topic.COLLECT)
+    public void handleFavoriteEvent(ConsumerRecord record) {
         if (!checkRecord(record)) {
             return;
         }
-        Event event = JSONObject.parseObject(record.value().toString(), Event.class);
-        logger.info("favorite: {}", event);
-        Long userFromId = event.getUserFromId();
-        Long postId =  event.getPostId();
-        noticeService.createFavoriteNotice(userFromId, postId);
+        CollectPostEvent collectPostEvent = JSONObject.parseObject(record.value().toString(), CollectPostEvent.class);
+        logger.info("favorite: {}", collectPostEvent);
+        Long postId = collectPostEvent.getPostId();
+        Long userId =  collectPostEvent.getUserId();
+        noticeService.createCollectPostNotice(postId, userId);
     }
     @KafkaListener(topics = Topic.FOLLOW)
     public void handlerFollowEvent(ConsumerRecord record) {
         if (!checkRecord(record)) {
             return;
         }
-        Event event = JSONObject.parseObject(record.value().toString(), Event.class);
-        logger.info("follow: {}", event);
-        Long userFromId = event.getUserFromId();
-        Long userToId =  event.getUserToId();
-        noticeService.createFollowNotice(userFromId, userToId);
+        FollowUserEvent followUserEvent = JSONObject.parseObject(record.value().toString(), FollowUserEvent.class);
+        logger.info("follow: {}", followUserEvent);
+        Long userFromId = followUserEvent.getUserFromId();
+        Long userToId =  followUserEvent.getUserToId();
+        noticeService.createFollowUserNotice(userFromId, userToId);
     }
 
     /**
@@ -78,6 +94,8 @@ public class EventConsumer {
         if (!checkRecord(record)) {
             return;
         }
+        Event event = JSONObject.parseObject(record.value().toString(), Event.class);
+        logger.info("follow: {}", event);
         MailEvent mailEvent = JSONObject.parseObject(record.value().toString(), MailEvent.class);
         emailUtil.send(mailEvent.getTo(), mailEvent.getSubject(), mailEvent.getText());
     }

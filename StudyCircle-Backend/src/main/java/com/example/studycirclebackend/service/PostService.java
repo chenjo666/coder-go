@@ -2,11 +2,10 @@ package com.example.studycirclebackend.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.studycirclebackend.dto.Response;
-import com.example.studycirclebackend.enums.ResponseCode;
 import com.example.studycirclebackend.pojo.Post;
-import com.example.studycirclebackend.vo.PersonPostVO;
+import com.example.studycirclebackend.vo.PostPersonalVO;
 import com.example.studycirclebackend.vo.PostOverviewVO;
-import com.example.studycirclebackend.vo.PostVO;
+import com.example.studycirclebackend.vo.PostDetailVO;
 
 import java.util.List;
 
@@ -23,9 +22,9 @@ public interface PostService extends IService<Post> {
     Response updatePost(Long postId, String newContent);
     Response deletePost(Long postId);
 
-    PostVO convertToVO(Post post);
+    PostDetailVO convertToVO(Post post);
 
-    PersonPostVO convertToPersonPostVO(Post post);
+    PostPersonalVO convertToPersonPostVO(Post post);
 
 
     // 得到某人发布的帖子列表
@@ -43,7 +42,7 @@ public interface PostService extends IService<Post> {
     // 得到帖子的总数
     Integer getPostTotal(String type, String order, String key);
     // 转换对象
-    PostOverviewVO convertToPostOverviewVO(Post post);
+    PostOverviewVO getPostOverviewVO(Post post);
 
 
     /**

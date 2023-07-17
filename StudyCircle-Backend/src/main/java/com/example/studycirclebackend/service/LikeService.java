@@ -6,14 +6,6 @@ import com.example.studycirclebackend.pojo.Like;
 
 public interface LikeService extends IService<Like> {
 
-    Response createLike(Long objectId, String objectType);
-
-    Response deleteLike(Long objectId, String objectType);
-
-    Long getLikeCountByObject(Long objectId, String objectType);
-
-    boolean isLikedByUser(Long userId, Long objectId, String objectType);
-
 
     void createPostLike(Long postId, Long userId);
     void createCommentLike(Long commentId, Long userId);

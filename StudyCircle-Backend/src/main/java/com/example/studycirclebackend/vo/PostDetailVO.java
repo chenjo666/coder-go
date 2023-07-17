@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class PostVO {
+public class PostDetailVO {
     // 作者
     private Long authorId;              // 作者 id
     private String authorName;          // 帖子作者名

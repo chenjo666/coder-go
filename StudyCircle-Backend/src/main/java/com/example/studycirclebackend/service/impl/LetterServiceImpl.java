@@ -7,7 +7,7 @@ import com.example.studycirclebackend.dto.Response;
 import com.example.studycirclebackend.pojo.BlockedLetter;
 import com.example.studycirclebackend.pojo.Letter;
 import com.example.studycirclebackend.pojo.User;
-import com.example.studycirclebackend.server.LetterRequest;
+import com.example.studycirclebackend.websocket.LetterRequest;
 import com.example.studycirclebackend.service.BlockedLetterService;
 import com.example.studycirclebackend.service.FollowService;
 import com.example.studycirclebackend.service.LetterService;
@@ -17,7 +17,6 @@ import com.example.studycirclebackend.util.UserUtil;
 import com.example.studycirclebackend.vo.LetterDetailVO;
 import com.example.studycirclebackend.vo.LetterOverviewVO;
 import jakarta.annotation.Resource;
-import lombok.Data;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,8 +70,8 @@ public class LetterServiceImpl extends ServiceImpl<LetterMapper, Letter> impleme
             letterOverviewVO.setNewContent(list.get(0).getContent());
             letterOverviewVO.setNewDate(DataUtil.formatDateTime(list.get(0).getSendTime()));
             // 查询关注、粉丝、是否屏蔽
-            boolean isStar = followService.isFollowed(userId, userFromId);
-            boolean isFan = followService.isFollowed(userFromId, userId);
+            boolean isStar = followService.isFollowedByUser(userId, userFromId);
+            boolean isFan = followService.isFollowedByUser(userFromId, userId);
             letterOverviewVO.setFan(isFan);
             letterOverviewVO.setStar(isStar);
             BlockedLetter one = blockedLetterService.getOne(new QueryWrapper<BlockedLetter>()
@@ -190,8 +189,8 @@ public class LetterServiceImpl extends ServiceImpl<LetterMapper, Letter> impleme
         letterOverviewVO.setNewContent(list.get(0).getContent());
         letterOverviewVO.setNewDate(DataUtil.formatDateTime(list.get(0).getSendTime()));
         // 查询关注、粉丝、是否屏蔽
-        boolean isStar = followService.isFollowed(userToId, userFromId);
-        boolean isFan = followService.isFollowed(userFromId, userToId);
+        boolean isStar = followService.isFollowedByUser(userToId, userFromId);
+        boolean isFan = followService.isFollowedByUser(userFromId, userToId);
         letterOverviewVO.setFan(isFan);
         letterOverviewVO.setStar(isStar);
         BlockedLetter one = blockedLetterService.getOne(new QueryWrapper<BlockedLetter>()

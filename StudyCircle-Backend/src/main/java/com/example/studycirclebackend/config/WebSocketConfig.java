@@ -1,6 +1,6 @@
 package com.example.studycirclebackend.config;
 
-import com.example.studycirclebackend.server.WebSocketHandler;
+import com.example.studycirclebackend.websocket.WebSocketHandler;
 import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;

@@ -14,24 +14,7 @@ public class PostController {
 
     @Resource
     private PostService postService;
-    @Resource
-    private FavoriteService favoriteService;
 
-    /**
-     * 查询帖子列表
-     * @param postType
-     * @param orderMode
-     * @param keyWord
-     * @param currentPage
-     * @param pageSize
-     * @return
-     */
-    @GetMapping
-    public Response searchPost(@RequestParam String postType, @RequestParam String orderMode,
-                               @RequestParam String keyWord, @RequestParam Integer currentPage,
-                               @RequestParam Integer pageSize) {
-        return postService.searchPosts(postType, orderMode, keyWord, pageSize, currentPage);
-    }
     /**
      * 查询帖子详情
      * @param postId
@@ -72,25 +55,13 @@ public class PostController {
     public Response deletePost(@PathVariable("postId") Long postId) {
         return postService.deletePost(postId);
     }
-    /**
-     * 收藏帖子
-     */
-    @PostMapping("/favorites")
-    public Response createFavorite(@RequestBody Map<String, String> args) {
-        Long postId = Long.parseLong(args.get("postId"));
-        return favoriteService.createFavorite(postId);
-    }
-    /**
-     * 删除收藏的帖子
-     */
-    @DeleteMapping("/favorites/{postId}")
-    public Response deleteFavorite(@PathVariable("postId") Long postId) {
-        return favoriteService.deleteFavorite(postId);
-    }
+
+
+
     /**
      * 查询收藏的帖子列表
      */
-    @GetMapping("/favorites/{userId}")
+    @GetMapping("/collections/{userId}")
     public Response getFavorites(@PathVariable("userId") Long userId) {
         return postService.getFavoritePosts(userId);
     }
@@ -103,14 +74,21 @@ public class PostController {
     }
 
 
+    /**
+     * 查询帖子业务
+     * @param postType
+     * @param orderMode
+     * @param keyWord
+     * @param currentPage
+     * @param pageSize
+     * @return
+     */
     @GetMapping("/v1")
     public Response getPosts(@RequestParam String postType, @RequestParam String orderMode,
                              @RequestParam String keyWord, @RequestParam Integer currentPage,
                              @RequestParam Integer pageSize) {
         return postService.getPosts(postType, orderMode, keyWord, currentPage, pageSize);
     }
-
-
     /**
      * 新点赞帖子业务
      * @param postId

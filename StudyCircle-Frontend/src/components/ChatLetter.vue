@@ -350,26 +350,7 @@ const getLetterDetailRequest = (userId) => {
 const sendLetterRequest = (userFromId, userToId, content, date) => {
     console.log(userFromId)
     socket?.send(JSON.stringify({ userFromId, userToId, content, 'time': date }))
-    // return axios.post('/letters', { userId, content, 'sendTime': date })
-    //     .then(response => {
-    //         if (response.status !== 200) {
-    //             errorMsg('网络请求出错!')
-    //             return false
-    //         }
-    //         const ans = response.data
-
-    //         if (ans.code !== 200) {
-    //             errorMsg(ans.msg)
-    //             return false
-    //         }
-    //         return true
-    //     })
-    //     .catch(error => {
-    //         console.error(error);
-    //         return false
-    //     });
 }
-
 // 4. 删除私信记录请求
 const deleteLetterRequest = (userId) => {
     return axios.delete(`/letters/${userId}`)

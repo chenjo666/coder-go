@@ -1,4 +1,4 @@
-package com.example.studycirclebackend.server;
+package com.example.studycirclebackend.websocket;
 
 import lombok.Data;
 

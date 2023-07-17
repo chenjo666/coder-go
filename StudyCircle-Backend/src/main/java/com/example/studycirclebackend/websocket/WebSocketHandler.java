@@ -1,13 +1,10 @@
-package com.example.studycirclebackend.server;
+package com.example.studycirclebackend.websocket;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.example.studycirclebackend.pojo.Letter;
 import com.example.studycirclebackend.service.LetterService;
-import com.example.studycirclebackend.service.impl.ConversationServiceImpl;
-import com.example.studycirclebackend.util.UserUtil;
 import com.example.studycirclebackend.vo.LetterOverviewVO;
 import jakarta.annotation.Resource;
-import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

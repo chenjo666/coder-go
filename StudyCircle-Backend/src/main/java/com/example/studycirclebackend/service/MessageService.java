@@ -9,7 +9,7 @@ import java.util.List;
 public interface MessageService {
 
     List<MessageVO> createMessage(Long conversationId, Long messageTargetId, String question);
-    boolean deleteMessage(Long messageId);
+    Response deleteMessage(Long messageId);
     MessageVO updateMessage(Long messageId);
     List<MessageVO> getMessages(Long conversationId);
 }

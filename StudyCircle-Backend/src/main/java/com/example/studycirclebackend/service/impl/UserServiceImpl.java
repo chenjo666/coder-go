@@ -4,13 +4,15 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.studycirclebackend.dao.TicketMapper;
 import com.example.studycirclebackend.dao.UserMapper;
-import com.example.studycirclebackend.dto.MailEvent;
 import com.example.studycirclebackend.dto.Response;
 import com.example.studycirclebackend.enums.*;
+import com.example.studycirclebackend.event.Event;
 import com.example.studycirclebackend.event.EventProducer;
+import com.example.studycirclebackend.event.MailEvent;
 import com.example.studycirclebackend.event.Topic;
 import com.example.studycirclebackend.pojo.Ticket;
 import com.example.studycirclebackend.pojo.User;
+import com.example.studycirclebackend.service.FollowService;
 import com.example.studycirclebackend.service.TicketService;
 import com.example.studycirclebackend.service.UserService;
 import com.example.studycirclebackend.util.DataUtil;
@@ -27,7 +29,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
@@ -38,6 +44,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private EventProducer eventProducer;
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
+    @Resource
+    private FollowService followService;
+    @Resource
+    private UserUtil userUtil;
     @Override
     public Response login(String email, String password, HttpServletResponse response) {
         if (StringUtils.isBlank(email) || StringUtils.isBlank(password)) {
@@ -116,8 +126,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 //        emailUtil.send(email, "您正在注册学友圈账号，这是您的验证码", uuidCode);
 
         // 消息队列发送邮件
-        MailEvent mailEvent = new MailEvent(Topic.MAIL, email, "您正在注册学友圈账号，这是您的验证码", uuidCode);
-        eventProducer.sendMailEvent(mailEvent);
+        Event mailEvent = new MailEvent(Topic.MAIL, NoticeType.SEND_MAIL.getValue(), email, "您正在注册学友圈账号，这是您的验证码", uuidCode);
+        eventProducer.createEvent(mailEvent);
 
         if (user != null) {
             // 增加激活码
@@ -157,9 +167,66 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return Response.builder().ok().build();
     }
 
+
+
+
+
     @Override
-    public UserVO convertToVO(User user) {
+    public Response followUser(Long targetUserId) {
+        if (targetUserId == null || userUtil.getUser() == null) {
+            return Response.builder().badRequest().build();
+        }
+        followService.createFollowUser(userUtil.getUser().getId(), targetUserId);
+        return Response.builder().ok().build();
+    }
+
+    @Override
+    public Response unFollowUser(Long targetUserId) {
+        if (targetUserId == null || userUtil.getUser() == null) {
+            return Response.builder().badRequest().build();
+        }
+        followService.deleteFollowUser(userUtil.getUser().getId(), targetUserId);
+
+        return Response.builder().ok().build();
+    }
+
+    @Override
+    public Response getUserFollowings(Long userId) {
+        if (userId == null) {
+            return Response.builder().badRequest().build();
+        }
+        Set<Object> followings = followService.getUserFollowings(userId);
+        return getUserVOListBySet(followings);
+    }
+    @Override
+    public Response getUserFollowers(Long userId) {
+        if (userId == null) {
+            return Response.builder().badRequest().build();
+        }
+        Set<Object> followers = followService.getUserFollowers(userId);
+        return getUserVOListBySet(followers);
+    }
+    private Response getUserVOListBySet(Set<Object> followings) {
+        List<Long> followingsId = followings.stream()
+                .map(obj -> (Long) obj)
+                .toList();
+
+        List<User> users = getBaseMapper().selectBatchIds(followingsId);
+        List<UserVO> userVOList = getUserVOList(users);
+
+        return Response.builder().ok().data(userVOList).build();
+    }
+    @Override
+    public UserVO getUserVO(User user) {
         return new UserVO(user.getId(), user.getUsername(), user.getAvatar());
     }
 
+
+    private List<UserVO> getUserVOList(List<User> users) {
+        List<UserVO> userVOList = new ArrayList<>();
+        for (User user : users) {
+            userVOList.add(getUserVO(user));
+        }
+        return userVOList;
+    }
 }
