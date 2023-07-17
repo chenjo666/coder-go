@@ -404,7 +404,7 @@ const unfollowRequest = (userId: string) => {
 }
 // （3）添加收藏请求，参数为帖子 id
 const favoriteRequest = (postId: string) => {
-    return axios.post(`/posts/v1/${postId}/collects`)
+    return axios.post(`/posts/v1/${postId}/favorites`)
         .then(response => {
             if (response.status !== 200) {
                 errorMsg('网络请求出错!')
@@ -425,7 +425,7 @@ const favoriteRequest = (postId: string) => {
 }
 //  (4) 取消收藏请求，参数为帖子 id
 const unfavoriteRequest = (postId: string) => {
-    return axios.delete(`/posts/v1/${postId}/collects`)
+    return axios.delete(`/posts/v1/${postId}/favorites`)
         .then(response => {
             if (response.status !== 200) {
                 errorMsg('网络请求出错!')
