@@ -42,10 +42,6 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     @Resource
     private CommentService commentService;
 
-    @Override
-    public Response searchPosts(String postType, String orderMode, String key, Integer pageRecords, Integer currentPage) {
-        return null;
-    }
 
     @Override
     public Response getPostDetail(Long postId, Integer currentPage, Integer pageSize) {
@@ -76,8 +72,8 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         postDetailVO.setLike(isLike);
 
         // 收藏业务
-        postDetailVO.setPostFavorites(Math.toIntExact(favoriteService.getPostCollectTotal(postId)));
-        postDetailVO.setFavorite(favoriteService.isCollectPostByUser(postId, userUtil.getUser().getId()));
+        postDetailVO.setPostFavorites(Math.toIntExact(favoriteService.getPostFavoriteTotal(postId)));
+        postDetailVO.setFavorite(favoriteService.isFavoritePostByUser(postId, userUtil.getUser().getId()));
 
         // 关注业务
         boolean isFollowed = followService.isFollowedByUser(userUtil.getUser().getId(), post.getUserId());
@@ -190,12 +186,15 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     }
 
     @Override
-    public PostDetailVO convertToVO(Post post) {
+    public PostDetailVO getPostDetailVO(Post post) {
         PostDetailVO postDetailVO = new PostDetailVO();
+
         User author = userService.getById(post.getUserId());
+
         postDetailVO.setAuthorId(author.getId());
         postDetailVO.setAuthorName(author.getUsername());
         postDetailVO.setAuthorAvatar(author.getAvatar());
+
         postDetailVO.setPostId(post.getId());
         postDetailVO.setPostContent(post.getContent());
         postDetailVO.setPostTitle(post.getTitle());
@@ -203,6 +202,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         postDetailVO.setPostTime(DataUtil.formatDateTime(post.getPublishTime()));
         postDetailVO.setPostTags(resolveTags(post.getTags()));
         postDetailVO.setPostVisits(108472);
+
         return postDetailVO;
     }
 
@@ -450,20 +450,20 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     }
 
     @Override
-    public Response collectPost(Long postId) {
+    public Response favoritePost(Long postId) {
         if (postId == null || userUtil.getUser().getId() == null) {
             return Response.builder().badRequest().build();
         }
-        favoriteService.createPostCollect(postId, userUtil.getUser().getId());
+        favoriteService.createPostFavorite(postId, userUtil.getUser().getId());
         return Response.builder().ok().build();
     }
 
     @Override
-    public Response unCollectPost(Long postId) {
+    public Response unFavoritePost(Long postId) {
         if (postId == null || userUtil.getUser().getId() == null) {
             return Response.builder().badRequest().build();
         }
-        favoriteService.deletePostCollect(postId, userUtil.getUser().getId());
+        favoriteService.deletePostFavorite(postId, userUtil.getUser().getId());
         return Response.builder().ok().build();
     }
     // 综合排序（官方=>置顶=>普通，按分数）

@@ -11,18 +11,13 @@ import java.util.List;
 
 public interface PostService extends IService<Post> {
 
-
-    Response searchPosts(String postType, String orderMode, String key, Integer currentPage, Integer pageSize);
-
     Response getPostDetail(Long postId, Integer currentPage, Integer pageSize);
 
-
     Response createPost(String postTitle, String postContent, String postType, List<String> postTags);
-
     Response updatePost(Long postId, String newContent);
     Response deletePost(Long postId);
 
-    PostDetailVO convertToVO(Post post);
+    PostDetailVO getPostDetailVO(Post post);
 
     PostPersonalVO convertToPersonPostVO(Post post);
 
@@ -58,10 +53,10 @@ public interface PostService extends IService<Post> {
     /**
      * 帖子的收藏业务
      */
-    Response collectPost(Long postId);
+    Response favoritePost(Long postId);
     /**
      * 帖子的取消收藏业务
      */
-    Response unCollectPost(Long postId);
+    Response unFavoritePost(Long postId);
 
 }

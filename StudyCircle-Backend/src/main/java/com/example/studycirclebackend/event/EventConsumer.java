@@ -5,7 +5,6 @@ import com.example.studycirclebackend.enums.NoticeType;
 import com.example.studycirclebackend.service.NoticeService;
 import com.example.studycirclebackend.util.EmailUtil;
 import jakarta.annotation.Resource;
-import net.sf.jsqlparser.statement.select.Top;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,16 +61,16 @@ public class EventConsumer {
             noticeService.createReplyCommentNotice(commentId, userId);
         }
     }
-    @KafkaListener(topics = Topic.COLLECT)
+    @KafkaListener(topics = Topic.FAVORITE)
     public void handleFavoriteEvent(ConsumerRecord record) {
         if (!checkRecord(record)) {
             return;
         }
-        CollectPostEvent collectPostEvent = JSONObject.parseObject(record.value().toString(), CollectPostEvent.class);
-        logger.info("favorite: {}", collectPostEvent);
-        Long postId = collectPostEvent.getPostId();
-        Long userId =  collectPostEvent.getUserId();
-        noticeService.createCollectPostNotice(postId, userId);
+        FavoritePostEvent favoritePostEvent = JSONObject.parseObject(record.value().toString(), FavoritePostEvent.class);
+        logger.info("favorite: {}", favoritePostEvent);
+        Long postId = favoritePostEvent.getPostId();
+        Long userId =  favoritePostEvent.getUserId();
+        noticeService.createFavoritePostNotice(postId, userId);
     }
     @KafkaListener(topics = Topic.FOLLOW)
     public void handlerFollowEvent(ConsumerRecord record) {

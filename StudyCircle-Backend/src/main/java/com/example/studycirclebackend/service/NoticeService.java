@@ -5,13 +5,11 @@ import com.example.studycirclebackend.dto.Response;
 import com.example.studycirclebackend.pojo.Notice;
 import com.example.studycirclebackend.vo.NoticeVO;
 
-import java.util.List;
-
 public interface NoticeService extends IService<Notice> {
 
     boolean deleteAllNotice();
 
-    boolean deleteSingleNotice(Long noticeId);
+    boolean deleteNotice(Long noticeId);
 
 
     boolean createNotice(Long userFromId, Long userToId, Integer noticeType, Long postId);
@@ -24,6 +22,6 @@ public interface NoticeService extends IService<Notice> {
     boolean createLikeCommentNotice(Long commentId, Long userId);
     boolean createReplyPostNotice(Long postId, Long userId);
     boolean createReplyCommentNotice(Long commentId, Long userId);
-    boolean createCollectPostNotice(Long postId, Long userId);
+    boolean createFavoritePostNotice(Long postId, Long userId);
     boolean createFollowUserNotice(Long userFromId, Long userToId);
 }

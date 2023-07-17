@@ -45,7 +45,7 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
     }
 
     @Override
-    public boolean deleteSingleNotice(Long noticeId) {
+    public boolean deleteNotice(Long noticeId) {
         if (noticeId == null) {
             return false;
         }
@@ -151,7 +151,7 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
     }
 
     @Override
-    public boolean createCollectPostNotice(Long postId, Long userId) {
+    public boolean createFavoritePostNotice(Long postId, Long userId) {
         Post post = postService.getById(postId);
         return createNotice(userId,
                 post.getUserId(),

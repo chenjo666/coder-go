@@ -5,10 +5,10 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class CollectPostEvent extends Event {
+public class FavoritePostEvent extends Event {
     private Long postId;
     private Long userId;
-    public CollectPostEvent(String topic, int noticeType, Long postId, Long userId) {
+    public FavoritePostEvent(String topic, int noticeType, Long postId, Long userId) {
         super(topic, noticeType);
         this.postId = postId;
         this.userId = userId;

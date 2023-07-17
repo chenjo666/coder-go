@@ -30,7 +30,7 @@ public class NoticeController {
     @DeleteMapping("/{noticeId}")
     public Response deleteSingleNotice(@PathVariable Long noticeId) {
         return Response.builder()
-                .code(noticeService.deleteSingleNotice(noticeId) ? 200 : -1)
+                .code(noticeService.deleteNotice(noticeId) ? 200 : -1)
                 .build();
     }
     /**

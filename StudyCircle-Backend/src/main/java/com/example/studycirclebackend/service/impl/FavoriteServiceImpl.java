@@ -3,7 +3,7 @@ package com.example.studycirclebackend.service.impl;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.studycirclebackend.dao.FavoriteMapper;
 import com.example.studycirclebackend.enums.NoticeType;
-import com.example.studycirclebackend.event.CollectPostEvent;
+import com.example.studycirclebackend.event.FavoritePostEvent;
 import com.example.studycirclebackend.event.Event;
 import com.example.studycirclebackend.event.EventProducer;
 import com.example.studycirclebackend.event.Topic;
@@ -23,30 +23,30 @@ public class FavoriteServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> i
     private RedisTemplate<String, Object> redisTemplate;
 
     @Override
-    public void createPostCollect(Long postId, Long userId) {
-        String key = RedisUtil.getPostCollectKey(postId);
+    public void createPostFavorite(Long postId, Long userId) {
+        String key = RedisUtil.getPostFavoriteKey(postId);
         redisTemplate.opsForSet().add(key, userId);
 
         // 收藏事件
-        Event event = new CollectPostEvent(Topic.COLLECT, NoticeType.FAVORITE_POST.getValue(), postId, userId);
+        Event event = new FavoritePostEvent(Topic.FAVORITE, NoticeType.FAVORITE_POST.getValue(), postId, userId);
         eventProducer.createEvent(event);
     }
 
     @Override
-    public void deletePostCollect(Long postId, Long userId) {
-        String key = RedisUtil.getPostCollectKey(postId);
+    public void deletePostFavorite(Long postId, Long userId) {
+        String key = RedisUtil.getPostFavoriteKey(postId);
         redisTemplate.opsForSet().remove(key, userId);
     }
 
     @Override
-    public Long getPostCollectTotal(Long postId) {
-        String key = RedisUtil.getPostCollectKey(postId);
+    public Long getPostFavoriteTotal(Long postId) {
+        String key = RedisUtil.getPostFavoriteKey(postId);
         return redisTemplate.opsForSet().size(key);
     }
 
     @Override
-    public boolean isCollectPostByUser(Long postId, Long userId) {
-        String key = RedisUtil.getPostCollectKey(postId);
+    public boolean isFavoritePostByUser(Long postId, Long userId) {
+        String key = RedisUtil.getPostFavoriteKey(postId);
         return Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(key, userId));
     }
 

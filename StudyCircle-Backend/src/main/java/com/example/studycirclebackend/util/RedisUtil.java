@@ -7,7 +7,7 @@ public class RedisUtil {
     private static final String POST = "post";
     private static final String COMMENT = "comment";
     private static final String LIKE = "like";
-    private static final String COLLECT = "collect";
+    private static final String FAVORITE = "favorite";
     private static final String FOLLOWING = "following";
     private static final String FOLLOWER = "follower";
     public static String getTicketKey(String token) {
@@ -30,8 +30,8 @@ public class RedisUtil {
     /**
      * 收藏帖子的键
      */
-    public static String getPostCollectKey(Long postId) {
-        return POST + SPLIT + postId + SPLIT + COLLECT;
+    public static String getPostFavoriteKey(Long postId) {
+        return POST + SPLIT + postId + SPLIT + FAVORITE;
     }
     /**
      * 用户的关注列表的键

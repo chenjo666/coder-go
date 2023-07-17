@@ -61,7 +61,7 @@ public class PostController {
     /**
      * 查询收藏的帖子列表
      */
-    @GetMapping("/collections/{userId}")
+    @GetMapping("/favorites/{userId}")
     public Response getFavorites(@PathVariable("userId") Long userId) {
         return postService.getFavoritePosts(userId);
     }
@@ -113,9 +113,9 @@ public class PostController {
      * @param postId
      * @return
      */
-    @PostMapping("/v1/{postId}/collects")
-    public Response createPostCollect(@PathVariable("postId") Long postId) {
-        return postService.collectPost(postId);
+    @PostMapping("/v1/{postId}/favorites")
+    public Response createPostFavorite(@PathVariable("postId") Long postId) {
+        return postService.favoritePost(postId);
     }
 
     /**
@@ -123,8 +123,8 @@ public class PostController {
      * @param postId
      * @return
      */
-    @DeleteMapping("/v1/{postId}/collects")
-    public Response deletePostCollect(@PathVariable("postId") Long postId) {
-        return postService.unCollectPost(postId);
+    @DeleteMapping("/v1/{postId}/favorites")
+    public Response deletePostFavorite(@PathVariable("postId") Long postId) {
+        return postService.unFavoritePost(postId);
     }
 }
