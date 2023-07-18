@@ -11,45 +11,53 @@ import java.util.List;
 
 public interface PostService extends IService<Post> {
 
+    /********************************** 四个 CRUD 方法 **********************************/
     Response getPostDetail(Long postId, Integer currentPage, Integer pageSize);
-
     Response createPost(String postTitle, String postContent, String postType, List<String> postTags);
     Response updatePost(Long postId, String newContent);
     Response deletePost(Long postId);
 
-    PostDetailVO getPostDetailVO(Post post);
 
-    PostPersonalVO convertToPersonPostVO(Post post);
-
-
+    /********************************** 两个查询帖子方法 **********************************/
     // 得到某人发布的帖子列表
-    Response getPublishPosts(Long userId);
-
+    Response getPostPublications(Long userId);
     // 得到某人收藏的帖子列表
-    Response getFavoritePosts(Long userId);
+    Response getPostFavorites(Long userId);
 
 
+    /********************************** 两个搜索帖子方法 **********************************/
     /**
-     * 得到帖子的大纲
+     * Mysql 搜索帖子，进行模糊查询
      */
     // 参数：帖子类型，排序规则，关键字，页码，每页限制
-    Response getPosts(String type, String order, String key, Integer page, Integer limit);
-    // 得到帖子的总数
-    Integer getPostTotal(String type, String order, String key);
-    // 转换对象
+    Response searchPostsByMySQL(String type, String order, String key, Integer page, Integer limit);
+    /**
+     * Elasticsearch 搜索帖子，进行结果关键词的高亮显示
+     * @param type
+     * @param order
+     * @param key
+     * @param page
+     * @param limit
+     * @return
+     */
+    Response searchPostsByElasticsearch(String type, String order, String key, Integer page, Integer limit);
+
+
+    /********************************** 三个转换对象方法 **********************************/
     PostOverviewVO getPostOverviewVO(Post post);
+    PostDetailVO getPostDetailVO(Post post);
+    PostPersonalVO getPostPersonVO(Post post);
 
 
+    /********************************** 四个点赞、收藏相关方法 **********************************/
     /**
      * 帖子的点赞业务
      */
     Response likePost(Long postId);
-
     /**
      * 帖子的取消点赞业务
      */
     Response dislikePost(Long postId);
-
     /**
      * 帖子的收藏业务
      */

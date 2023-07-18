@@ -21,6 +21,18 @@ import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate;
+import org.springframework.data.elasticsearch.client.elc.NativeQuery;
+import org.springframework.data.elasticsearch.client.elc.NativeQueryBuilder;
+import org.springframework.data.elasticsearch.core.SearchHit;
+import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.core.query.HighlightQuery;
+import org.springframework.data.elasticsearch.core.query.Query;
+import org.springframework.data.elasticsearch.core.query.highlight.Highlight;
+import org.springframework.data.elasticsearch.core.query.highlight.HighlightField;
+import org.springframework.data.elasticsearch.core.query.highlight.HighlightFieldParameters;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -41,96 +53,28 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     private FavoriteService favoriteService;
     @Resource
     private CommentService commentService;
-
+    @Resource
+    private ElasticsearchTemplate elasticsearchTemplate;
 
     @Override
     public Response getPostDetail(Long postId, Integer currentPage, Integer pageSize) {
         if (postId == null || currentPage == null || pageSize == null) {
-            throw new IllegalArgumentException("参数不能为空！");
+            return Response.builder().badRequest().build();
         }
         Post post = getById(postId);
         if (post == null) {
-            return Response.builder().code(-1).msg("参数错误！").build();
+            return Response.builder().notContent().build();
         }
-        User author = userService.getById(post.getUserId());
-        PostDetailVO postDetailVO = new PostDetailVO();
-        postDetailVO.setAuthorId(author.getId());
-        postDetailVO.setAuthorName(author.getUsername());
-        postDetailVO.setAuthorAvatar(author.getAvatar());
-        postDetailVO.setPostId(post.getId());
-        postDetailVO.setPostContent(post.getContent());
-        postDetailVO.setPostTitle(post.getTitle());
-        postDetailVO.setPostType(post.getType());
-        postDetailVO.setPostTime(DataUtil.formatDateTime(post.getPublishTime()));
-        postDetailVO.setPostTags(resolveTags(post.getTags()));
-        postDetailVO.setPostVisits(108472);
+        PostDetailVO postDetailVO = getPostDetailVO(post);
 
-        // 点赞业务
-        Long count = likeService.getPostLikeTotal(postId);
-        boolean isLike = likeService.isLikePostByUser(postId, userUtil.getUser().getId());
-        postDetailVO.setPostLikes(Math.toIntExact(count));
-        postDetailVO.setLike(isLike);
+        List<CommentVO> commentVOs = commentService.getCommentVOs(postId, CommentOrderMode.NORMAL.getValue(), currentPage, pageSize);
 
-        // 收藏业务
-        postDetailVO.setPostFavorites(Math.toIntExact(favoriteService.getPostFavoriteTotal(postId)));
-        postDetailVO.setFavorite(favoriteService.isFavoritePostByUser(postId, userUtil.getUser().getId()));
+        postDetailVO.setPostReplies(commentVOs.size());  // 外层评论数量
+        postDetailVO.setCommentReplies(Math.toIntExact(commentService.getPostRepliesByPostId(postId) - commentVOs.size()));         // 内层评论数量
+        postDetailVO.setParentCommentListVO(commentVOs);  // 子评论
 
-        // 关注业务
-        boolean isFollowed = followService.isFollowedByUser(userUtil.getUser().getId(), post.getUserId());
-        postDetailVO.setFollowAuthor(isFollowed);
-
-        List<Comment> commentParentList = commentService.list(new QueryWrapper<Comment>()
-                .eq("object_type", CommentObjectType.POST.getValue())
-                .eq("object_id", post.getId())
-                .orderByDesc("score")
-                .last(String.format("LIMIT %d,%d", (currentPage - 1) * pageSize, pageSize)));
-
-        List<CommentVO> parentCommentListVO = new ArrayList<>();
-
-        for (Comment comment : commentParentList) {
-            CommentVO commentVO = new CommentVO();
-
-            User user = userService.getById(comment.getUserId());
-            // 作者
-            commentVO.setUserId(user.getId());
-            commentVO.setUserAvatar(user.getAvatar());
-            commentVO.setUserName(user.getUsername());
-            // 评论
-            commentVO.setCommentId(comment.getId());
-            commentVO.setCommentTime(DataUtil.formatDateTime(comment.getCommentTime()));
-            commentVO.setCommentContent(comment.getContent());
-            commentVO.setCommentScore(comment.getScore());
-            // 点赞
-            count = likeService.getCommentLikeTotal(comment.getId());
-            isLike = likeService.isLikeCommentByUser(comment.getId(), userUtil.getUser().getId());
-            commentVO.setCommentLikes(Math.toIntExact(count));
-            commentVO.setLike(isLike);
-            // 子评论
-            List<CommentVO> childCommentListVO = new ArrayList<>();
-            dfs(comment, childCommentListVO);
-            // 子评论按照分数排序
-            childCommentListVO.sort(Comparator.comparing(CommentVO::getCommentScore));
-            commentVO.setChildCommentListVO(childCommentListVO);
-            commentVO.setCommentReplies(childCommentListVO.size());
-            parentCommentListVO.add(commentVO);
-        }
-        parentCommentListVO.sort(Comparator.comparing(CommentVO::getCommentScore)); // 外层评论排序
-
-        // 外层评论数量等于所有评论的总数
-        List<Comment> allParentComments = commentService.getCommentAllByPost(postId);
-        postDetailVO.setPostReplies(allParentComments.size());// 外层评论数量
-        // 内层评论数量等于所有评论的子评论的总数
-        int commentReplies = 0;
-        for (Comment comment : allParentComments) {
-            commentReplies += commentService.getChildCommentsByComment(comment.getId()).size();
-        }
-        postDetailVO.setCommentReplies(commentReplies);// 内层评论数量
-        // 子评论
-        postDetailVO.setParentCommentListVO(parentCommentListVO);
-
-        return Response.builder().code(200).data(postDetailVO).build();
+        return Response.builder().ok().data(postDetailVO).build();
     }
-
     @Override
     public Response createPost(String postTitle, String postContent, String postType, List<String> postTags) {
         if (StringUtils.isBlank(postTitle) || StringUtils.isBlank(postContent) || StringUtils.isBlank(postType) || postTags == null) {
@@ -145,80 +89,38 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         post.setPublishTime(new Date());
         post.setIsGem(0);
         post.setIsTop(0);
-        StringBuilder tags = new StringBuilder();
-        if (postTags.size() != 0) {
-            for (String tag : postTags) {
-                tags.append(tag + ",");
-            }
-        }
-        post.setTags(tags.toString());
+        post.setTags(unionTags(postTags));
+        // mysql 存储帖子
         save(post);
-        return Response.builder().code(200).build();
+        // elasticsearch 存储帖子
+        elasticsearchTemplate.save(post);
+        return Response.builder().ok().build();
     }
-
     // 更新帖子
     @Override
     public Response updatePost(Long postId, String newContent) {
         if (postId == null || StringUtils.isBlank(newContent)) {
-            return Response.builder()
-                    .code(400)
-                    .build();
+            return Response.builder().badRequest().build();
         }
         boolean result = update(new UpdateWrapper<Post>().set("content", newContent).eq("id", postId));
-
-        return Response.builder()
-                .code(result ? ResponseCode.SUCCESS.getValue() : ResponseCode.FAILURE.getValue())
-                .build();
+        if (!result)
+            return Response.builder().notContent().build();
+        return Response.builder().ok().build();
     }
-
     // 删除帖子
     @Override
     public Response deletePost(Long postId) {
         if (postId == null) {
-            return Response.builder()
-                    .code(400)
-                    .build();
+            return Response.builder().badRequest().build();
         }
+        // mysql 删除
         boolean result = removeById(postId);
-        return Response.builder()
-                .code(result ? ResponseCode.SUCCESS.getValue() : ResponseCode.FAILURE.getValue())
-                .build();
+        // es 删除
+        elasticsearchTemplate.delete(postId.toString(), Post.class);
+        return Response.builder().ok().build();
     }
-
     @Override
-    public PostDetailVO getPostDetailVO(Post post) {
-        PostDetailVO postDetailVO = new PostDetailVO();
-
-        User author = userService.getById(post.getUserId());
-
-        postDetailVO.setAuthorId(author.getId());
-        postDetailVO.setAuthorName(author.getUsername());
-        postDetailVO.setAuthorAvatar(author.getAvatar());
-
-        postDetailVO.setPostId(post.getId());
-        postDetailVO.setPostContent(post.getContent());
-        postDetailVO.setPostTitle(post.getTitle());
-        postDetailVO.setPostType(post.getType());
-        postDetailVO.setPostTime(DataUtil.formatDateTime(post.getPublishTime()));
-        postDetailVO.setPostTags(resolveTags(post.getTags()));
-        postDetailVO.setPostVisits(108472);
-
-        return postDetailVO;
-    }
-
-    @Override
-    public PostPersonalVO convertToPersonPostVO(Post post) {
-        PostPersonalVO favoritePostVO = new PostPersonalVO();
-        favoritePostVO.setPostId(post.getId());
-        favoritePostVO.setPostTime(DataUtil.formatDateTime(post.getPublishTime()));
-        favoritePostVO.setPostViews(new Random().nextInt(1000));
-        Long likes = likeService.getPostLikeTotal(post.getId());
-        favoritePostVO.setPostLikes(Math.toIntExact(likes));
-        return null;
-    }
-
-    @Override
-    public Response getPublishPosts(Long userId) {
+    public Response getPostPublications(Long userId) {
         if (userId == null) {
             return Response.builder().badRequest().build();
         }
@@ -227,13 +129,12 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         // 2. 转换为 VO
         List<PostPersonalVO> postPersonalVOList = posts
                 .stream()
-                .map(this::convertToPersonPostVO)
+                .map(this::getPostPersonVO)
                 .collect(Collectors.toList());
         return Response.builder().code(200).data(postPersonalVOList).build();
     }
-
     @Override
-    public Response getFavoritePosts(Long userId) {
+    public Response getPostFavorites(Long userId) {
         if (userId == null) {
             return Response.builder().badRequest().build();
         }
@@ -243,29 +144,23 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         // 2. 转换为 VO
         List<PostPersonalVO> postPersonalVOList = posts
                 .stream()
-                .map(this::convertToPersonPostVO)
+                .map(this::getPostPersonVO)
                 .collect(Collectors.toList());
         return Response.builder().ok().data(postPersonalVOList).build();
     }
 
-    /**
-     * 得到帖子总览视图对象
-     * @param type
-     * @param order
-     * @param key
-     * @param page
-     * @param limit
-     * @return
-     */
+    /*********************************** 两个搜索帖子业务 ***********************************/
     @Override
-    public Response getPosts(String type, String order, String key, Integer page, Integer limit) {
+    public Response searchPostsByMySQL(String type, String order, String key, Integer page, Integer limit) {
         if (StringUtils.isBlank(type) || StringUtils.isBlank(order) || page == null || limit == null) {
             return Response.builder().badRequest().build();
         }
-        QueryWrapper<Post> queryWrapper = getOrderCondition(type, order, key);
+        Map<String, Object> data = new HashMap<>();
+        QueryWrapper<Post> queryWrapper = getQueryWrapper(type, order, key);
+        data.put("postTotal", Math.toIntExact(count(queryWrapper)));
+
         queryWrapper.last(String.format("LIMIT %d,%d", (page - 1) * limit, limit));
         List<Post> posts = list(queryWrapper);
-        Map<String, Object> data = new HashMap<>();
         List<PostOverviewVO> postOverviewVOs = new ArrayList<>();
         for (Post post : posts) {
             postOverviewVOs.add(getPostOverviewVO(post));
@@ -285,45 +180,88 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
             postOverviewVO.setPostReplies(postReplies);
         }
         data.put("posts", postOverviewVOs);
-        data.put("postTotal", getPostTotal(type, order, key));
+
+        return Response.builder().ok().data(data).build();
+    }
+    @Override
+    public Response searchPostsByElasticsearch(String type, String order, String key, Integer page, Integer limit) {
+        if (StringUtils.isBlank(type) || StringUtils.isBlank(order) || page == null || limit == null) {
+            return Response.builder().badRequest().build();
+        }
+        Map<String, Object> data = new HashMap<>();
+        List<PostOverviewVO> postOverviewVOs = new ArrayList<>();
+        // 搜索条件
+        NativeQueryBuilder builder = getQueryBuilder(type, order, key);
+        // 搜索命中总数
+        Query totalQuery = builder.build();
+        SearchHits<Post> totalHits = elasticsearchTemplate.search(totalQuery, Post.class);
+        data.put("postTotal", Math.toIntExact(totalHits.getTotalHits()));
+        // 搜索命中的帖子
+        // 1. 构建分页
+        NativeQuery query = builder.withPageable(PageRequest.of(page - 1, limit)).build();
+        // 2. 查询结果
+        SearchHits<Post> searchHits = elasticsearchTemplate.search(query, Post.class);
+        for (SearchHit<Post> searchHit : searchHits) {
+            Post post = searchHit.getContent();
+            // 3. 构建高亮
+            List<String> highlightTitles = searchHit.getHighlightFields().get("title");
+            if (highlightTitles != null)
+                post.setTitle(highlightTitles.get(0));
+            List<String> highlightContents = searchHit.getHighlightFields().get("content");
+            if (highlightContents != null)
+                post.setContent(highlightContents.get(0));
+            // 4. 载入容器
+            postOverviewVOs.add(getPostOverviewVO(post));
+        }
+        // 5. 载入结果
+        data.put("posts", postOverviewVOs);
         return Response.builder().ok().data(data).build();
     }
 
-    /**
-     * 得到帖子的总数
-     * @param type
-     * @param order
-     * @param key
-     * @return
-     */
-    @Override
-    public Integer getPostTotal(String type, String order, String key) {
-        QueryWrapper<Post> queryWrapper = getOrderCondition(type, order, key);
-        return Math.toIntExact(count(queryWrapper));
+    /*********************************** 两个查询构造条件 ***********************************/
+    // 构建查询条件 elasticsearch
+    public NativeQueryBuilder getQueryBuilder(String type, String order, String key) {
+        NativeQueryBuilder builder = NativeQuery.builder();
+
+        // 帖子类型；【全部、或者其它】
+        if (!PostType.ALL.getValue().equals(type) && !PostType.OTHER.getValue().equals(type)) {
+            builder.withFilter(q -> q.term(t -> t.field("type").value(type)));
+        }
+
+        // 帖子搜索关键字
+        if (key != null && !StringUtils.isBlank(key)) {
+            // (1) 构建查询内容
+            builder.withQuery(q -> q
+                    .multiMatch(m -> m
+                            .fields("title", "content")
+                            .query(key)));
+            // (2) 构建高亮
+            HighlightFieldParameters fieldParameters = HighlightFieldParameters.builder()
+                    .withPreTags("<span style=\"color:red\">")
+                    .withPostTags("</span>")
+                    .build();
+            List<HighlightField> list = new ArrayList<>();
+            list.add(new HighlightField("title", fieldParameters));
+            list.add(new HighlightField("content", fieldParameters));
+            Highlight highlight = new Highlight(list);
+            builder.withHighlightQuery(new HighlightQuery(highlight, Post.class));
+        }
+
+        // 帖子排序规则
+        if (PostOrderMode.NORMAL.getValue().equals(order)) {
+            builder.withSort(Sort.by("isTop").descending());
+            builder.withSort(Sort.by("isGem").descending());
+            builder.withSort(Sort.by("score").descending());
+        } else if (PostOrderMode.NEWEST.getValue().equals(order)) {
+            builder.withSort(Sort.by("publishTime").descending());
+        } else if (PostOrderMode.HOTEST.getValue().equals(order)) {
+            builder.withSort(Sort.by("score").descending());
+        }
+
+        return builder;
     }
-
-    /**
-     * 转换值对象
-     * */
-    @Override
-    public PostOverviewVO getPostOverviewVO(Post post) {
-        PostOverviewVO postOverviewVO = new PostOverviewVO();
-        postOverviewVO.setUserId(post.getUserId());
-        postOverviewVO.setPostId(post.getId());
-        postOverviewVO.setPostTitle(post.getTitle());
-        postOverviewVO.setPostContent(post.getContent());
-        postOverviewVO.setPostTime(DataUtil.formatDateTime(post.getPublishTime()));
-        postOverviewVO.setGem(post.getIsGem() == 1);
-        postOverviewVO.setTop(post.getIsTop() == 1);
-        return postOverviewVO;
-    }
-
-
-
-    /**
-     * 构建查询条件（辅助【得到帖子总览对象】）
-     */
-    private QueryWrapper<Post> getOrderCondition(String type, String order, String key) {
+    // 构建查询条件 mysql
+    private QueryWrapper<Post> getQueryWrapper(String type, String order, String key) {
         QueryWrapper<Post> queryWrapper = new QueryWrapper<>();
         // 帖子类型；【全部、或者其它】
         if (!PostType.ALL.getValue().equals(type) && !PostType.OTHER.getValue().equals(type)) {
@@ -354,69 +292,8 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         return queryWrapper;
     }
 
-
-    private void dfs(Comment commentParent, List<CommentVO> childCommentListVO) {
-        List<Comment> childComments = commentService.list(new QueryWrapper<Comment>()
-                .eq("object_type", CommentObjectType.COMMENT.getValue())
-                .eq("object_id", commentParent.getId()));
-        if (childComments == null) {
-            return;
-        }
-        for (Comment comment : childComments) {
-            CommentVO commentVO = new CommentVO();
-
-            User user = userService.getById(comment.getUserId());
-            commentVO.setUserId(user.getId());
-            commentVO.setUserAvatar(user.getAvatar());
-            commentVO.setUserName(user.getUsername());
-
-            commentVO.setCommentId(comment.getId());
-            commentVO.setCommentTime(DataUtil.formatDateTime(comment.getCommentTime()));
-            commentVO.setCommentContent(comment.getContent());
-
-
-            Long count = likeService.getCommentLikeTotal(comment.getId());
-            boolean isLike = likeService.isLikeCommentByUser( comment.getId(), userUtil.getUser().getId());
-            commentVO.setCommentLikes(Math.toIntExact(count));
-            commentVO.setLike(isLike);
-
-            commentVO.setCommentScore(comment.getScore());
-            dfs(comment, childCommentListVO);
-            childCommentListVO.add(commentVO);
-        }
-    }
-
-
-
-
-    private PostDetailVO convertToPostVO(Post post) {
-        Random random = new Random();
-        PostDetailVO postDetailVO = new PostDetailVO();
-        // 用户服务
-        User author = userService.getById(post.getUserId());
-        postDetailVO.setAuthorAvatar(author.getAvatar());
-        // 帖子服务
-        postDetailVO.setPostId(post.getId());
-        postDetailVO.setPostTitle(post.getTitle());
-        postDetailVO.setPostContent(post.getContent());
-        postDetailVO.setPostTime(DataUtil.formatDateTime(post.getPublishTime()));
-        postDetailVO.setPostVisits(random.nextInt(100000));
-        postDetailVO.setTop(post.getIsTop() == 1);
-        postDetailVO.setGem(post.getIsGem() == 1);
-        // 点赞数量
-        Long count = likeService.getPostLikeTotal(post.getId());
-        postDetailVO.setPostLikes(Math.toIntExact(count));
-        // 评论数量
-        List<Comment> allParentComments = commentService.getCommentAllByPost(post.getId());
-        postDetailVO.setPostReplies(allParentComments.size());// 外层评论数量
-        // 内层评论数量等于所有评论的子评论的总数
-        long commentReplies = commentService.getPostRepliesByPostId(post.getId());
-        postDetailVO.setCommentReplies((int) (commentReplies - allParentComments.size()));
-
-        return postDetailVO;
-    }
-
-    private List<String> resolveTags(String tags) {
+    /*********************************** 两个标签转换工具 ***********************************/
+    private List<String> splitTags(String tags) {
         if (tags == null) {
             return null;
         }
@@ -429,8 +306,17 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         }
         return ans;
     }
+    private String unionTags(List<String> tags) {
+        StringBuilder ans = new StringBuilder();
+        if (tags.size() != 0) {
+            for (String tag : tags) {
+                ans.append(tag).append(",");
+            }
+        }
+        return ans.toString();
+    }
 
-
+    /*********************************** 四个点赞、收藏相关业务 ***********************************/
     @Override
     public Response likePost(Long postId) {
         if (postId == null || userUtil.getUser().getId() == null) {
@@ -439,7 +325,6 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         likeService.createPostLike(postId, userUtil.getUser().getId());
         return Response.builder().ok().build();
     }
-
     @Override
     public Response dislikePost(Long postId) {
         if (postId == null || userUtil.getUser().getId() == null) {
@@ -448,7 +333,6 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         likeService.deletePostLike(postId, userUtil.getUser().getId());
         return Response.builder().ok().build();
     }
-
     @Override
     public Response favoritePost(Long postId) {
         if (postId == null || userUtil.getUser().getId() == null) {
@@ -457,7 +341,6 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         favoriteService.createPostFavorite(postId, userUtil.getUser().getId());
         return Response.builder().ok().build();
     }
-
     @Override
     public Response unFavoritePost(Long postId) {
         if (postId == null || userUtil.getUser().getId() == null) {
@@ -466,6 +349,81 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         favoriteService.deletePostFavorite(postId, userUtil.getUser().getId());
         return Response.builder().ok().build();
     }
+
+
+    /****************************************三个视图对象*****************************************/
+    // 转换 PostOverviewVO 对象
+    @Override
+    public PostOverviewVO getPostOverviewVO(Post post) {
+        Random random = new Random();
+        PostOverviewVO postOverviewVO = new PostOverviewVO();
+        // 帖子作者
+        User author = userService.getById(post.getUserId());
+        postOverviewVO.setUserAvatar(author.getAvatar());
+        postOverviewVO.setUserId(post.getUserId());
+        // 帖子
+        postOverviewVO.setPostId(post.getId());
+        postOverviewVO.setPostTitle(post.getTitle());
+        postOverviewVO.setPostContent(post.getContent());
+        postOverviewVO.setPostTime(DataUtil.formatDateTime(post.getPublishTime()));
+        postOverviewVO.setGem(post.getIsGem() == 1);
+        postOverviewVO.setTop(post.getIsTop() == 1);
+        // 点赞数量
+        Long count = likeService.getPostLikeTotal(post.getId());
+        postOverviewVO.setPostLikes((long) Math.toIntExact(count));
+        // 评论
+        long postReplies = commentService.getPostRepliesByPostId(post.getId());
+        postOverviewVO.setPostReplies(postReplies);
+        // 观看人数
+        postOverviewVO.setPostViews(random.nextLong(1000));
+        return postOverviewVO;
+    }
+    // 转换 PostDetailVO 对象
+    @Override
+    public PostDetailVO getPostDetailVO(Post post) {
+        PostDetailVO postDetailVO = new PostDetailVO();
+        // 帖子服务
+        postDetailVO.setPostId(post.getId());
+        postDetailVO.setPostContent(post.getContent());
+        postDetailVO.setPostTitle(post.getTitle());
+        postDetailVO.setPostType(post.getType());
+        postDetailVO.setPostTime(DataUtil.formatDateTime(post.getPublishTime()));
+        postDetailVO.setPostTags(splitTags(post.getTags()));
+        postDetailVO.setPostVisits(108472);
+        // 用户服务
+        User author = userService.getById(post.getUserId());
+        postDetailVO.setAuthorId(author.getId());
+        postDetailVO.setAuthorName(author.getUsername());
+        postDetailVO.setAuthorAvatar(author.getAvatar());
+        // 点赞业务
+        Long count = likeService.getPostLikeTotal(post.getId());
+        boolean isLike = likeService.isLikePostByUser(post.getId(), userUtil.getUser().getId());
+        postDetailVO.setPostLikes(Math.toIntExact(count));
+        postDetailVO.setLike(isLike);
+        // 收藏业务
+        postDetailVO.setPostFavorites(Math.toIntExact(favoriteService.getPostFavoriteTotal(post.getId())));
+        postDetailVO.setFavorite(favoriteService.isFavoritePostByUser(post.getId(), userUtil.getUser().getId()));
+        // 关注业务
+        boolean isFollowed = followService.isFollowedByUser(userUtil.getUser().getId(), post.getUserId());
+        postDetailVO.setFollowAuthor(isFollowed);
+
+        return postDetailVO;
+    }
+    // 转换 PostPersonVO 对象
+    @Override
+    public PostPersonalVO getPostPersonVO(Post post) {
+        PostPersonalVO favoritePostVO = new PostPersonalVO();
+        favoritePostVO.setPostId(post.getId());
+        favoritePostVO.setPostTime(DataUtil.formatDateTime(post.getPublishTime()));
+        favoritePostVO.setPostViews(new Random().nextInt(1000));
+        Long likes = likeService.getPostLikeTotal(post.getId());
+        favoritePostVO.setPostLikes(Math.toIntExact(likes));
+        return null;
+    }
+
+
+
+
     // 综合排序（官方=>置顶=>普通，按分数）
     // SELECT * FROM post
     // WHERE type = 【postType】

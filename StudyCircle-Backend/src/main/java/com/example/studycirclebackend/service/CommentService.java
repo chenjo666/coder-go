@@ -3,26 +3,23 @@ package com.example.studycirclebackend.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.studycirclebackend.dto.Response;
 import com.example.studycirclebackend.pojo.Comment;
+import com.example.studycirclebackend.vo.CommentVO;
 
 import java.util.List;
 
 public interface CommentService extends IService<Comment> {
 
 
-    Response getCommentList(Long postId, String orderMode, Integer currentPage, Integer pageSize);
+    Response getAllCommentsByPost(Long postId, String orderMode, Integer currentPage, Integer pageSize);
+    Response getAllCommentsByComment(Long commentId);
 
 
-    Response addComment(Long objectId, String objectType, String content);
-
-    Response delComment(Long commentId);
-
-    Response setComment(Long commentId, String newContent);
-
+    Response createComment(Long objectId, String objectType, String content);
+    Response deleteComment(Long commentId);
     Response updateComment(Long commentId, String newContent);
 
-    Response getCommentsByComment(Long commentId);
-    List<Comment> getCommentAllByPost(Long postId);
-
+    List<CommentVO> getCommentVOs(Long postId, String orderMode, Integer currentPage, Integer pageSize);
+    List<Comment> getParentCommentsByPost(Long postId);
     List<Comment> getChildCommentsByComment(Long commentId);
 
 
@@ -35,7 +32,7 @@ public interface CommentService extends IService<Comment> {
      */
     Long getPostIdByCommentId(Long commentId);
 
-
+    public CommentVO getCommentVO(Comment comment);
 
     /**
      * 评论的点赞业务

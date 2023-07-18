@@ -1,11 +1,9 @@
 <script lang="ts" setup>
-import { reactive, toRefs } from 'vue'
-import { Timer, Pointer, ChatRound, View, Search, CirclePlus } from '@element-plus/icons-vue'
-import { ref, watch, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router';
+import { Timer, Pointer, ChatRound, View, Search } from '@element-plus/icons-vue'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router';
 import axios from 'axios';
 import { ElMessage } from 'element-plus'
-import { marked } from 'marked';
 const successMsg = (msg) => {
     ElMessage({
         showClose: true,
@@ -20,11 +18,6 @@ const errorMsg = (msg) => {
         type: 'error',
     })
 }
-// 文本转换
-const markedContent = (content) => {
-    return marked.parse(content);
-}
-
 /**************************************** 请求数据区 *****************************************/
 // 搜索关键字
 // 帖子类型[all、discussion、help、sharing、tutorial、emotional、news、review、survey]
@@ -125,8 +118,7 @@ const clickPostDetailEvent = (postId) => {
 /******************************************************* 数据请求区 *******************************************************/
 // （1）请求全部帖子
 const getPostListRequest = () => {
-    console.log('hello')
-    return axios.get("/posts/v1", {
+    return axios.get("/posts/v2", {
         params: {
             'postType': postType.value,
             'orderMode': orderMode.value,
@@ -203,13 +195,12 @@ const getPostListRequest = () => {
                             <div class="post-info" @click="clickPostDetailEvent(post.postId)">
                                 <div class="post-header">
                                     <el-avatar :size="30" :src="post.userAvatar" class="post-author" />
-                                    <p class="post-postTitle">
-                                    <h1 style="font-weight: 600;">{{ post.postTitle }}</h1>
-                                    </p>
+                                    <div class="post-postTitle"  v-html="post.postTitle">
+                                    </div>
                                     <el-tag v-if="post.top">置顶</el-tag>
                                     <el-tag class="ml-2" type="success" v-if="post.gem">精选</el-tag>
                                 </div>
-                                <div class="post-body" v-html="markedContent(post.postContent)"></div>
+                                <div class="post-body" v-html="post.postContent"></div>
                                 <div class="post-footer">
                                     <el-text><el-icon>
                                             <View />
@@ -261,6 +252,7 @@ const getPostListRequest = () => {
 .post-author,
 .post-postTitle {
     margin-right: 10px;
+    font-weight: 600;
 }
 
 .post-search,

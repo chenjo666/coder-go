@@ -14,7 +14,6 @@ public class PostController {
 
     @Resource
     private PostService postService;
-
     /**
      * 查询帖子详情
      * @param postId
@@ -23,7 +22,7 @@ public class PostController {
      * @return
      */
     @GetMapping("/{postId}")
-    public Response getPostDetail(@PathVariable("postId") Long postId, @RequestParam Integer currentPage, @RequestParam Integer pageSize) {
+    public Response getPostDetails(@PathVariable("postId") Long postId, @RequestParam Integer currentPage, @RequestParam Integer pageSize) {
         return postService.getPostDetail(postId, currentPage, pageSize);
     }
     /**
@@ -55,25 +54,20 @@ public class PostController {
     public Response deletePost(@PathVariable("postId") Long postId) {
         return postService.deletePost(postId);
     }
-
-
-
     /**
      * 查询收藏的帖子列表
      */
     @GetMapping("/favorites/{userId}")
-    public Response getFavorites(@PathVariable("userId") Long userId) {
-        return postService.getFavoritePosts(userId);
+    public Response getPostFavorites(@PathVariable("userId") Long userId) {
+        return postService.getPostFavorites(userId);
     }
     /**
      * 查询发布的帖子列表
      */
     @GetMapping("/publications/{userId}")
-    public Response getPublications(@PathVariable("userId") Long userId) {
-        return postService.getPublishPosts(userId);
+    public Response getPostPublications(@PathVariable("userId") Long userId) {
+        return postService.getPostPublications(userId);
     }
-
-
     /**
      * 查询帖子业务
      * @param postType
@@ -87,7 +81,23 @@ public class PostController {
     public Response getPosts(@RequestParam String postType, @RequestParam String orderMode,
                              @RequestParam String keyWord, @RequestParam Integer currentPage,
                              @RequestParam Integer pageSize) {
-        return postService.getPosts(postType, orderMode, keyWord, currentPage, pageSize);
+        return postService.searchPostsByMySQL(postType, orderMode, keyWord, currentPage, pageSize);
+    }
+
+    /**
+     * 搜索帖子业务
+     * @param postType
+     * @param orderMode
+     * @param keyWord
+     * @param currentPage
+     * @param pageSize
+     * @return
+     */
+    @GetMapping("/v2")
+    public Response searchPosts(@RequestParam String postType, @RequestParam String orderMode,
+                             @RequestParam String keyWord, @RequestParam Integer currentPage,
+                             @RequestParam Integer pageSize) {
+        return postService.searchPostsByElasticsearch(postType, orderMode, keyWord, currentPage, pageSize);
     }
     /**
      * 新点赞帖子业务

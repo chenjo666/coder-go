@@ -19,7 +19,6 @@ public class ConversationController {
     private MessageService messageService;
     /**
      * 查询全部对话
-     * @return
      */
     @GetMapping
     public Response getConversationAll() {
@@ -27,7 +26,6 @@ public class ConversationController {
     }
     /**
      * 添加对话
-     * @return
      */
     @PostMapping
     public Response addConversation() {
@@ -35,8 +33,6 @@ public class ConversationController {
     }
     /**
      * 删除对话
-     * @param conversationId
-     * @return
      */
     @DeleteMapping("/{conversation_id}")
     public Response deleteConversation(@PathVariable("conversation_id") Long conversationId) {
@@ -44,9 +40,6 @@ public class ConversationController {
     }
     /**
      * 修改对话
-     * @param conversationId
-     * @param newConversationName
-     * @return
      */
     @PutMapping("/{conversation_id}")
     public Response setConversationNewName(@PathVariable("conversation_id") Long conversationId, @RequestParam String newConversationName) {
@@ -54,8 +47,6 @@ public class ConversationController {
     }
     /**
      * 查询某个对话下的全部消息
-     * @param conversationId
-     * @return
      */
     @GetMapping("/{conversation_id}/messages")
     public Response getMessages(@PathVariable("conversation_id") Long conversationId) {
@@ -64,9 +55,6 @@ public class ConversationController {
     }
     /**
      * 创建某个消息
-     * @param conversationId
-     * @param map
-     * @return
      */
     @PostMapping("/{conversation_id}/messages")
     public Response createMessage(@PathVariable("conversation_id") Long conversationId, @RequestBody Map<String, Object> map) {
@@ -80,8 +68,6 @@ public class ConversationController {
     }
     /**
      * 更新某个消息
-     * @param messageId
-     * @return
      */
     @PutMapping("/messages/{message_id}")
     public Response updateMessage(@PathVariable("message_id") Long messageId) {
@@ -93,8 +79,6 @@ public class ConversationController {
     }
     /**
      * 删除某个消息
-     * @param messageId
-     * @return
      */
     @DeleteMapping("/messages/{message_id}")
     public Response deleteMessage(@PathVariable("message_id") Long messageId) {
