@@ -350,6 +350,11 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         return Response.builder().ok().build();
     }
 
+    @Override
+    public Response getSearchSuggestions(String key) {
+        return null;
+    }
+
 
     /****************************************三个视图对象*****************************************/
     // 转换 PostOverviewVO 对象

@@ -52,6 +52,10 @@ const postOverviewVO = ref({
         ],
     "postTotal":20
 })
+const keywordSuggestions = ref({
+    
+})
+
 /********************************************************** 界面事件区 ***************************************************** **/
 onMounted(() => {
     getPostListRequest()
@@ -115,6 +119,10 @@ const clickPageEvent = () => {
 const clickPostDetailEvent = (postId) => {
     router.push(`/postDetail/${postId}`)
 }
+
+const handleSelect = (item: string) => {
+  keyInput.value = item
+}
 /******************************************************* 数据请求区 *******************************************************/
 // （1）请求全部帖子
 const getPostListRequest = () => {
@@ -144,6 +152,19 @@ const getPostListRequest = () => {
         return null
     });
 }
+//  (2) 请求提示词
+const getSuggestionRequest = (queryString: string, cb: (arg: any) => void) => {
+    axios.get('/posts/v1/suggestions/', { params: {queryString}})
+    .then(res => {
+        if (res.status === 200) {
+            return null
+        }
+        const result = res.data.data
+        cb(result)
+    }).catch(err => {
+        console.log(err)
+    })
+}
 </script>
 
 <template>
@@ -152,11 +173,11 @@ const getPostListRequest = () => {
             <el-container>
                 <el-header>
                     <div class="post-search">
-                        <el-input v-model="keyInput" placeholder="搜索" class="input">
+                        <el-autocomplete v-model="keyInput" :fetch-suggestions="getSuggestionRequest" class="input" placeholder="Please input" @select="handleSelect">
                             <template #append>
                                 <el-button :icon="Search" @click="clickSearchEvent()" />
                             </template>
-                        </el-input>
+                        </el-autocomplete>
                     </div>
                 </el-header>
                 <!-- 主体区域 -->

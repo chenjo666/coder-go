@@ -9,6 +9,7 @@ import com.mysql.cj.conf.DatabaseUrlContainer;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.elasticsearch.core.suggest.Completion;
 import org.springframework.test.context.TestPropertySource;
 
 import java.time.LocalDateTime;
@@ -24,7 +25,11 @@ public class PostServiceTests {
 
     @Test
     public void insertData() {
-
+        List<Post> list = postService.list();
+        for (Post post : list) {
+            post.setTitleCompletion(new Completion(new String[]{post.getTitle()}));
+        }
+        postService.updateBatchById(list);
     }
     @Test
     public void reSetType() {

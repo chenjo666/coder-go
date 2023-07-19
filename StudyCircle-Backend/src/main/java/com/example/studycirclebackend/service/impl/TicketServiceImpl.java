@@ -30,10 +30,7 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, Ticket> impleme
         ticket.setToken(token);
         ticket.setUserId(userId);
         ticket.setIsValid(1);
-//        ticket.setExpire(new Date(System.currentTimeMillis() + 3600L * 24 * 30 * 1000));
-        // 1）mysql 存储 ticket
-//        save(ticket);
-        // 2）redis 存储 ticket
+
         String key = RedisUtil.getTicketKey(token);
         redisTemplate.opsForValue().set(key, ticket, 30, TimeUnit.DAYS);
 

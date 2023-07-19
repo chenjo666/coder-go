@@ -1,7 +1,6 @@
 package com.example.studycirclebackend.event;
 
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 

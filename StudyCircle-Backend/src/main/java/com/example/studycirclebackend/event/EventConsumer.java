@@ -94,9 +94,9 @@ public class EventConsumer {
             return;
         }
         Event event = JSONObject.parseObject(record.value().toString(), Event.class);
-        logger.info("follow: {}", event);
-        MailEvent mailEvent = JSONObject.parseObject(record.value().toString(), MailEvent.class);
-        emailUtil.send(mailEvent.getTo(), mailEvent.getSubject(), mailEvent.getText());
+        logger.info("User send mail event: {}", event);
+        SendMailEvent sendMailEvent = JSONObject.parseObject(record.value().toString(), SendMailEvent.class);
+        emailUtil.send(sendMailEvent.getTo(), sendMailEvent.getSubject(), sendMailEvent.getText());
     }
     private boolean checkRecord(ConsumerRecord record) {
         if (record == null || record.value() == null) {

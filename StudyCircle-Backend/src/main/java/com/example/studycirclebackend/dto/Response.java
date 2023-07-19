@@ -55,6 +55,38 @@ public class Response<T> {
             this.msg = "Not Found";
             return this;
         }
+
+        public ResponseBuilder<T> loginSuccess() {
+            this.code = 200;
+            this.msg = "登录成功！";
+            return this;
+        }
+        public ResponseBuilder<T> loginFailed() {
+            this.code = 400;
+            this.msg = "邮箱或密码错误！";
+            return this;
+        }
+        public ResponseBuilder<T> registerSuccess() {
+            this.code = 200;
+            this.msg = "注册成功！";
+            return this;
+        }
+        public ResponseBuilder<T> registerFailed() {
+            this.code = 400;
+            this.msg = "注册失败，请输入正确的信息！";
+            return this;
+        }
+        public ResponseBuilder<T> activateSuccess() {
+            this.code = 200;
+            this.msg = "激活成功，请查看邮箱！";
+            return this;
+        }
+        public ResponseBuilder<T> activateFailed() {
+            this.code = 400;
+            this.msg = "激活失败，邮箱已经激活！";
+            return this;
+        }
+
         public Response<T> build() {
             Response<T> response = new Response<>();
             response.code = this.code;

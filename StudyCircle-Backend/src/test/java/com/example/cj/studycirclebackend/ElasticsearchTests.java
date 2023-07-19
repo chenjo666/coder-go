@@ -33,7 +33,11 @@ public class ElasticsearchTests {
 private PostService postService;
     @Test
     public void testCreateIndex() {
-        operations.save(postService.list());
+//        List<Post> list = postService.list();
+//        for (Post post : list) {
+//            post.setTitleCompletion(new Completion(new String[]{post.getTitle()}));
+//        }
+//        operations.save(list);
     }
 
     @Test
@@ -61,5 +65,14 @@ private PostService postService;
         for (SearchHit<Post> searchHit : searchHits) {
             System.out.println(searchHit);
         }
+    }
+
+    @Test
+    public void testSuggester() {
+        String suggestField="titleCompletion";//指定在哪个字段搜索
+        String suggestValue="王二";//输入的信息
+        Integer suggestMaxCount=10;//获得最大suggest条数
+
+//        Suggest
     }
 }

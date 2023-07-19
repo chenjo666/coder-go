@@ -67,4 +67,6 @@ public interface PostService extends IService<Post> {
      */
     Response unFavoritePost(Long postId);
 
+    /*************************************** 关键词提示 ****************************/
+    Response getSearchSuggestions(String key);
 }

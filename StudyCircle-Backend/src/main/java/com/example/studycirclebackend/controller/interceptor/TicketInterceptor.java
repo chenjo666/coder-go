@@ -29,8 +29,6 @@ public class TicketInterceptor implements HandlerInterceptor {
     private TicketService ticketService;
     @Resource
     private UserService userService;
-@Resource
-private RedisTemplate<String, Object> redisTemplate;
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         // 从请求中获取 cookie
