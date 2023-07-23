@@ -1,0 +1,23 @@
+package com.cj.studycirclebackend;
+
+import com.cj.studycirclebackend.StudyCircleBackendApplication;
+import com.cj.studycirclebackend.dao.UserMapper;
+import com.cj.studycirclebackend.pojo.User;
+import jakarta.annotation.Resource;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.List;
+
+@SpringBootTest(classes = {StudyCircleBackendApplication.class})
+public class MyBatisPlusTests {
+    @Resource
+    private UserMapper userMapper;
+    @Test
+    public void testUse() {
+        List<User> users = userMapper.selectList(null);
+        for (User u : users) {
+            System.out.println(u);
+        }
+    }
+}

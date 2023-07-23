@@ -173,11 +173,11 @@ const getSuggestionRequest = (queryString: string, cb: (arg: any) => void) => {
             <el-container>
                 <el-header>
                     <div class="post-search">
-                        <el-autocomplete v-model="keyInput" :fetch-suggestions="getSuggestionRequest" class="input" placeholder="Please input" @select="handleSelect">
+                        <el-input placeholder="请输入">
                             <template #append>
                                 <el-button :icon="Search" @click="clickSearchEvent()" />
                             </template>
-                        </el-autocomplete>
+                        </el-input>
                     </div>
                 </el-header>
                 <!-- 主体区域 -->
