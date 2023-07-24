@@ -70,7 +70,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         response.addCookie(cookie);
 
         logger.info("User /login: {}", user);
-        return Response.loginSuccess();
+        return Response.loginSuccess(user);
     }
 
     @Override

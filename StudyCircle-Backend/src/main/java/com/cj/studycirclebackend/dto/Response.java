@@ -33,8 +33,8 @@ public class Response {
      * 登录返回值
      * @return
      */
-    public static Response loginSuccess() {
-        return Response.builder().code(200).msg("登录成功！").build();
+    public static Response loginSuccess(Object data) {
+        return Response.builder().code(200).msg("登录成功！").data(data).build();
     }
 
     public static Response loginFailed() {

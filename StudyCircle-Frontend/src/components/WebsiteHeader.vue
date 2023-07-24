@@ -7,7 +7,7 @@ import axios from 'axios'
 import PostEditor from './PostEditor.vue';
 import router from '../router'
 
-const user = ref(localStorage.getItem("user"))
+const user = JSON.parse(localStorage.getItem("user") ?? '');
 const navChoice = ref('home')
 const loginFormVisible = ref(false)
 const registerFormVisible = ref(false)
@@ -30,12 +30,12 @@ const presonEvent = () => {
 }
 // login
 const loginEvent = (result) => {
-    user.value = localStorage.getItem('user') 
+    user.value = result
     loginFormVisible.value = false
 }
 // register
 const registerEvent = (result) => {
-    user.value = localStorage.getItem('user')
+    user.value = result
     registerFormVisible.value = false;
 }
 // post
@@ -126,7 +126,7 @@ const clickNoticeEvent = () => {
                     <el-popover placement="bottom" :width="150" trigger="click">
                         <template #reference>
                             <div class="popover-content">
-                                <el-avatar :src="JSON.parse(user).avatar"
+                                <el-avatar :src="user.avatar"
                                     class="user-avatar" :size="40" />
                             </div>
                         </template>

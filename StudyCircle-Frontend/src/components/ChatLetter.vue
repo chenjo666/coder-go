@@ -125,7 +125,7 @@ const searchInput = ref('')
 const letterContent = ref('')
 const activeLetterIndex = ref(0)
 const activePopoverIndex = ref(-1)
-// const user = JSON.parse(localStorage.getItem("user") ?? '');
+const user = JSON.parse(localStorage.getItem("user") ?? '');
 let socket: WebSocket | null = null;
 /******************************************* 事件区 *************************************************/
 
@@ -281,144 +281,144 @@ const emojiClickEvent = (result) => {
 }
 /******************************************* 请求区 *************************************************/
 // 0. 查询私信全部信息
-// onMounted(() => {
-//     getLetterAllRequest()
-//         .then(res => {
-//             if (res != null) {
-//                 UIVO.value = res
-//                 autoScrolToBottom()
-//             }
-//         }).catch(err => {
-//             console.log(err)
-//         })
-//     const userId = user?.id;
+onMounted(() => {
+    getLetterAllRequest()
+        .then(res => {
+            if (res != null) {
+                UIVO.value = res
+                autoScrolToBottom()
+            }
+        }).catch(err => {
+            console.log(err)
+        })
+    const userId = user?.id;
 
-//     socket = new WebSocket(`ws://localhost:9000/websocket/${userId}`);
-//     socket.onerror = function(error) {
-//         console.error('WebSocket connection error:', error);
-//     };
-//     socket.onmessage = (event) => {
-//         const data = JSON.parse(event.data)
-//         handleResponse(data)
-//     }
-// })
-// onBeforeUnmount(() => {
-//     // 在组件卸载之前关闭 WebSocket 连接
-//     if (socket) {
-//         socket.close();
-//     }
-// });
-// // 1. 查询私信全部信息请求
-// const getLetterAllRequest = () => {
-//     return axios.get(`/letters`)
-//         .then(response => {
-//             if (response.status !== 200) {
-//                 errorMsg('网络请求出错!')
-//                 return null
-//             }
-//             const ans = response.data
+    socket = new WebSocket(`ws://localhost:9000/websocket/${userId}`);
+    socket.onerror = function(error) {
+        console.error('WebSocket connection error:', error);
+    };
+    socket.onmessage = (event) => {
+        const data = JSON.parse(event.data)
+        handleResponse(data)
+    }
+})
+onBeforeUnmount(() => {
+    // 在组件卸载之前关闭 WebSocket 连接
+    if (socket) {
+        socket.close();
+    }
+});
+// 1. 查询私信全部信息请求
+const getLetterAllRequest = () => {
+    return axios.get(`/letters`)
+        .then(response => {
+            if (response.status !== 200) {
+                errorMsg('网络请求出错!')
+                return null
+            }
+            const ans = response.data
 
-//             if (ans.code !== 200) {
-//                 errorMsg(ans.msg)
-//                 return null
-//             }
-//             return ans.data
-//         })
-//         .catch(error => {
-//             console.error(error);
-//             return null
-//         });
-// }
-// // 2. 查询私信详情请求
-// const getLetterDetailRequest = (userId) => {
-//     return axios.get(`/letters/${userId}/messages`)
-//         .then(response => {
-//             if (response.status !== 200) {
-//                 errorMsg('网络请求出错!')
-//                 return null
-//             }
-//             const ans = response.data
+            if (ans.code !== 200) {
+                errorMsg(ans.msg)
+                return null
+            }
+            return ans.data
+        })
+        .catch(error => {
+            console.error(error);
+            return null
+        });
+}
+// 2. 查询私信详情请求
+const getLetterDetailRequest = (userId) => {
+    return axios.get(`/letters/${userId}/messages`)
+        .then(response => {
+            if (response.status !== 200) {
+                errorMsg('网络请求出错!')
+                return null
+            }
+            const ans = response.data
 
-//             if (ans.code !== 200) {
-//                 errorMsg(ans.msg)
-//                 return null
-//             }
-//             return ans.data
-//         })
-//         .catch(error => {
-//             console.error(error);
-//             return null
-//         });
-// }
-// // 3. 发送私信请求
-// const sendLetterRequest = (userFromId, userToId, content, date) => {
-//     console.log(userFromId)
-//     socket?.send(JSON.stringify({ userFromId, userToId, content, 'time': date }))
-// }
-// // 4. 删除私信记录请求
-// const deleteLetterRequest = (userId) => {
-//     return axios.delete(`/letters/${userId}`)
-//         .then(response => {
-//             if (response.status !== 200) {
-//                 errorMsg('网络请求出错!')
-//                 return false
-//             }
-//             const ans = response.data
+            if (ans.code !== 200) {
+                errorMsg(ans.msg)
+                return null
+            }
+            return ans.data
+        })
+        .catch(error => {
+            console.error(error);
+            return null
+        });
+}
+// 3. 发送私信请求
+const sendLetterRequest = (userFromId, userToId, content, date) => {
+    console.log(userFromId)
+    socket?.send(JSON.stringify({ userFromId, userToId, content, 'time': date }))
+}
+// 4. 删除私信记录请求
+const deleteLetterRequest = (userId) => {
+    return axios.delete(`/letters/${userId}`)
+        .then(response => {
+            if (response.status !== 200) {
+                errorMsg('网络请求出错!')
+                return false
+            }
+            const ans = response.data
 
-//             if (ans.code !== 200) {
-//                 errorMsg(ans.msg)
-//                 return false
-//             }
-//             return true
-//         })
-//         .catch(error => {
-//             console.error(error);
-//             return false
-//         });
-// }
+            if (ans.code !== 200) {
+                errorMsg(ans.msg)
+                return false
+            }
+            return true
+        })
+        .catch(error => {
+            console.error(error);
+            return false
+        });
+}
 
-// // 5. 添加屏蔽私信请求
-// const blockLetterRequest = (blockedUserId) => {
-//     return axios.post(`/letters/blocks/${blockedUserId}`)
-//         .then(response => {
-//             if (response.status !== 200) {
-//                 errorMsg('网络请求出错!')
-//                 return false
-//             }
-//             const ans = response.data
+// 5. 添加屏蔽私信请求
+const blockLetterRequest = (blockedUserId) => {
+    return axios.post(`/letters/blocks/${blockedUserId}`)
+        .then(response => {
+            if (response.status !== 200) {
+                errorMsg('网络请求出错!')
+                return false
+            }
+            const ans = response.data
 
-//             if (ans.code !== 200) {
-//                 errorMsg(ans.msg)
-//                 return false
-//             }
-//             return true
-//         })
-//         .catch(error => {
-//             console.error(error);
-//             return false
-//         });
-// }
-// // 6. 取消屏蔽私信请求
-// const unblockLetterRequest = (blockedUserId) => {
-//     return axios.delete(`/letters/blocks/${blockedUserId}`)
-//         .then(response => {
-//             if (response.status !== 200) {
-//                 errorMsg('网络请求出错!')
-//                 return false
-//             }
-//             const ans = response.data
+            if (ans.code !== 200) {
+                errorMsg(ans.msg)
+                return false
+            }
+            return true
+        })
+        .catch(error => {
+            console.error(error);
+            return false
+        });
+}
+// 6. 取消屏蔽私信请求
+const unblockLetterRequest = (blockedUserId) => {
+    return axios.delete(`/letters/blocks/${blockedUserId}`)
+        .then(response => {
+            if (response.status !== 200) {
+                errorMsg('网络请求出错!')
+                return false
+            }
+            const ans = response.data
 
-//             if (ans.code !== 200) {
-//                 errorMsg(ans.msg)
-//                 return false
-//             }
-//             return true
-//         })
-//         .catch(error => {
-//             console.error(error);
-//             return false
-//         });
-// }
+            if (ans.code !== 200) {
+                errorMsg(ans.msg)
+                return false
+            }
+            return true
+        })
+        .catch(error => {
+            console.error(error);
+            return false
+        });
+}
 </script>
 
 <template>
@@ -522,8 +522,8 @@ const emojiClickEvent = (result) => {
                                                 <p class="time">{{ letterDetail.sendTime }}</p>
                                                 <div class="info-content">{{ letterDetail.content }}</div>
                                             </div>
-                                            <!-- <img class="chat-avatar"
-                                                :src="user?.avatar"> -->
+                                            <img class="chat-avatar"
+                                                :src="user?.avatar">
                                         </div>
                                     </div>
                                 </div>
