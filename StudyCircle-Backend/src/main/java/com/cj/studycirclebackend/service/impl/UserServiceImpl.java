@@ -50,19 +50,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public Response login(String email, String password, HttpServletResponse response) {
         if (StringUtils.isBlank(email) || StringUtils.isBlank(password)) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         // 1. 查询用户
         User user = getOne(new QueryWrapper<User>().eq("email", email));
         // 1.1 用户不存在，则退出
         if (user == null) {
-            return Response.builder().loginFailed().build();
+            return Response.loginFailed();
         }
         // 1.2 用户存在则解密密码
         password = DataUtil.md5(password + user.getSalt());
         // 2.1 登录失败
         if (!password.equals(user.getPassword())) {
-            return Response.builder().loginFailed().build();
+            return Response.loginFailed();
         }
         // 2.2 登录成功
         String token = DataUtil.generateUUID();
@@ -70,19 +70,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         response.addCookie(cookie);
 
         logger.info("User /login: {}", user);
-        return Response.builder().loginSuccess().build();
+        return Response.loginSuccess();
     }
 
     @Override
     public Response register(String email, String password, String code, HttpServletResponse response) {
         if (StringUtils.isBlank(email) || StringUtils.isBlank(password)  || StringUtils.isBlank(password)) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         // 1. 查询用户
         User user = getOne(new QueryWrapper<User>().eq("email", email).eq("activation_code", code));
         // 1.1 用户不存在
         if (user == null) {
-            return Response.builder().registerFailed().build();
+            return Response.registerFailed();
         }
         // 1.2 注册成功，修改用户状态
         String token = DataUtil.generateUUID();
@@ -97,18 +97,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         response.addCookie(cookie);
 
         logger.info("User /register: {}", email);
-        return Response.builder().registerSuccess().data(user).build();
+        return Response.registerSuccess(user);
     }
 
     @Override
     public Response activate(String email) {
         if (email == null) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         User user = getOne(new QueryWrapper<User>().eq("email", email));
         // 用户已经注册并且已经激活
         if (user != null && user.getIsRegister() == 1) {
-            return Response.builder().activateFailed().build();
+            return Response.activateFailed();
         }
         // 用户注册但未激活
         String uuidCode = DataUtil.generateUUID();
@@ -121,7 +121,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             // 增加激活码
             user.setActivationCode(uuidCode);
             updateById(user);
-            return Response.builder().activateSuccess().build();
+            return Response.activateSuccess();
         }
         // 用户未注册
         User u = new User();
@@ -132,25 +132,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         u.setActivationCode(uuidCode);
         save(u);
 
-        return Response.builder().activateSuccess().build();
+        return Response.activateSuccess();
     }
 
     @Override
     public Response logout(String token) {
         if (StringUtils.isBlank(token)) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         // 1. 得到凭证
         Ticket ticket = ticketService.getTicket(token);
         if (ticket == null) {
-            return Response.builder().notContent().build();
+            return Response.notContent();
         }
         // 2. 删除凭证
         String key = RedisUtil.getTicketKey(token);
         redisTemplate.delete(key);
 
         logger.info("User logout: {}", ticket.getUserId());
-        return Response.builder().ok().build();
+        return Response.ok();
     }
 
 
@@ -160,26 +160,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public Response followUser(Long targetUserId) {
         if (targetUserId == null || userUtil.getUser() == null) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         followService.createFollowUser(userUtil.getUser().getId(), targetUserId);
-        return Response.builder().ok().build();
+        return Response.ok();
     }
 
     @Override
     public Response unFollowUser(Long targetUserId) {
         if (targetUserId == null || userUtil.getUser() == null) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         followService.deleteFollowUser(userUtil.getUser().getId(), targetUserId);
 
-        return Response.builder().ok().build();
+        return Response.ok();
     }
 
     @Override
     public Response getUserFollowings(Long userId) {
         if (userId == null) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         Set<Object> followings = followService.getUserFollowings(userId);
         return getUserVOListBySet(followings);
@@ -187,7 +187,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public Response getUserFollowers(Long userId) {
         if (userId == null) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         Set<Object> followers = followService.getUserFollowers(userId);
         return getUserVOListBySet(followers);
@@ -200,7 +200,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         List<User> users = getBaseMapper().selectBatchIds(followingsId);
         List<UserVO> userVOList = getUserVOList(users);
 
-        return Response.builder().ok().data(userVOList).build();
+        return Response.ok(userVOList);
     }
     @Override
     public UserVO getUserVO(User user) {

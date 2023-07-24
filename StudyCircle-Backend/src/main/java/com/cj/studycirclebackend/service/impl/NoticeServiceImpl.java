@@ -67,7 +67,7 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
     @Transactional
     public Response getNotice(Integer currentPage, Integer pageSize) {
         if (currentPage == null || pageSize == null || userUtil.getUser() == null) {
-            return null;
+            return Response.badRequest();
         }
         Map<String, Object> data = new HashMap<>();
         List<Notice> notices = list(new QueryWrapper<Notice>()
@@ -75,7 +75,7 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
                 .orderByDesc("notice_time")
                 .last(String.format("LIMIT %d,%d", (currentPage - 1) * pageSize, pageSize)));
         if (notices == null) {
-            return null;
+            return Response.notContent();
         }
         List<NoticeVO> noticeVOList = new ArrayList<>();
         for (Notice notice : notices) {
@@ -96,7 +96,7 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
         data.put("noticeTotal", (int) count);
         data.put("noticeUnRead", (int) unRead);
         data.put("noticeVOList", noticeVOList);
-        return Response.builder().code(200).data(data).build();
+        return Response.ok(data);
     }
 
     @Override
@@ -140,13 +140,19 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
 
     @Override
     public boolean createReplyPostNotice(Long postId, Long userId) {
-        return false;
+        return createNotice(userId,
+                postId,
+                NoticeType.REPLY_POST.getValue(),
+                postId);
     }
 
     @Override
     public boolean createReplyCommentNotice(Long commentId, Long userId) {
-
-        return false;
+        Long postId = commentService.getPostIdByCommentId(commentId);
+        return createNotice(userId,
+                postId,
+                NoticeType.REPLY_COMMENT.getValue(),
+                postId);
     }
 
     @Override

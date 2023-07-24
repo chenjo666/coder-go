@@ -102,7 +102,7 @@ public class LetterServiceImpl extends ServiceImpl<LetterMapper, Letter> impleme
         Map<String, Object> data = new HashMap<>();
         data.put("letterOverviewVOList", letterOverviewVOList);
         data.put("letterDetailVOList", letterDetailVOList);
-        return Response.builder().code(200).data(data).build();
+        return Response.ok(data);
     }
 
     @Override
@@ -123,7 +123,7 @@ public class LetterServiceImpl extends ServiceImpl<LetterMapper, Letter> impleme
             letter.setIsRead(1);
         }
         updateBatchById(list);
-        return Response.builder().code(200).data(letterDetailVOList).build();
+        return Response.ok(letterDetailVOList);
     }
 
     @Override
@@ -136,7 +136,7 @@ public class LetterServiceImpl extends ServiceImpl<LetterMapper, Letter> impleme
         letter.setSendTime(sendTime);
         save(letter);
 
-        return Response.builder().code(200).build();
+        return Response.ok();
     }
 
     @Override
@@ -148,7 +148,7 @@ public class LetterServiceImpl extends ServiceImpl<LetterMapper, Letter> impleme
                 .or()
                 .eq("user_from_id", id)
                 .eq("user_to_id", userId));
-        return Response.builder().code(200).build();
+        return Response.ok();
     }
 
     @Override

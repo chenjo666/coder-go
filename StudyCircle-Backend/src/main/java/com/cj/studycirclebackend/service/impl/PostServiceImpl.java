@@ -65,11 +65,11 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     @Override
     public Response getPostDetail(Long postId, Integer currentPage, Integer pageSize) {
         if (postId == null || currentPage == null || pageSize == null) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         Post post = getById(postId);
         if (post == null) {
-            return Response.builder().notContent().build();
+            return Response.notContent();
         }
         PostDetailVO postDetailVO = getPostDetailVO(post);
 
@@ -79,7 +79,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         postDetailVO.setCommentReplies(Math.toIntExact(commentService.getPostRepliesByPostId(postId) - commentVOs.size()));         // 内层评论数量
         postDetailVO.setParentCommentListVO(commentVOs);  // 子评论
 
-        return Response.builder().ok().data(postDetailVO).build();
+        return Response.ok(postDetailVO);
     }
     @Override
     public Response createPost(String postTitle, String postContent, String postType, List<String> postTags) {
@@ -100,35 +100,35 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         save(post);
         // elasticsearch 存储帖子
         elasticsearchTemplate.save(post);
-        return Response.builder().ok().build();
+        return Response.ok();
     }
     // 更新帖子
     @Override
     public Response updatePost(Long postId, String newContent) {
         if (postId == null || StringUtils.isBlank(newContent)) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         boolean result = update(new UpdateWrapper<Post>().set("content", newContent).eq("id", postId));
         if (!result)
-            return Response.builder().notContent().build();
-        return Response.builder().ok().build();
+            return Response.notContent();
+        return Response.ok();
     }
     // 删除帖子
     @Override
     public Response deletePost(Long postId) {
         if (postId == null) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         // mysql 删除
         boolean result = removeById(postId);
         // es 删除
         elasticsearchTemplate.delete(postId.toString(), Post.class);
-        return Response.builder().ok().build();
+        return Response.ok();
     }
     @Override
     public Response getPostPublications(Long userId) {
         if (userId == null) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         // 1. 得到发布的帖子
         List<Post> posts = list(new QueryWrapper<Post>().eq("user_id", userId));
@@ -142,7 +142,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     @Override
     public Response getPostFavorites(Long userId) {
         if (userId == null) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         // 1. 得到收藏的帖子
         List<Post> posts = list(new QueryWrapper<Post>()
@@ -152,14 +152,14 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
                 .stream()
                 .map(this::getPostPersonVO)
                 .collect(Collectors.toList());
-        return Response.builder().ok().data(postPersonalVOList).build();
+        return Response.ok(postPersonalVOList);
     }
 
     /*********************************** 两个搜索帖子业务 ***********************************/
     @Override
     public Response searchPostsByMySQL(String type, String order, String key, Integer page, Integer limit) {
         if (StringUtils.isBlank(type) || StringUtils.isBlank(order) || page == null || limit == null) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         Map<String, Object> data = new HashMap<>();
         QueryWrapper<Post> queryWrapper = getQueryWrapper(type, order, key);
@@ -187,12 +187,12 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         }
         data.put("posts", postOverviewVOs);
 
-        return Response.builder().ok().data(data).build();
+        return Response.ok(data);
     }
     @Override
     public Response searchPostsByElasticsearch(String type, String order, String key, Integer page, Integer limit) {
         if (StringUtils.isBlank(type) || StringUtils.isBlank(order) || page == null || limit == null) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         Map<String, Object> data = new HashMap<>();
         List<PostOverviewVO> postOverviewVOs = new ArrayList<>();
@@ -221,7 +221,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         }
         // 5. 载入结果
         data.put("posts", postOverviewVOs);
-        return Response.builder().ok().data(data).build();
+        return Response.ok(data);
     }
 
     /*********************************** 两个查询构造条件 ***********************************/
@@ -326,34 +326,34 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     @Override
     public Response likePost(Long postId) {
         if (postId == null || userUtil.getUser().getId() == null) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         likeService.createPostLike(postId, userUtil.getUser().getId());
-        return Response.builder().ok().build();
+        return Response.ok();
     }
     @Override
     public Response dislikePost(Long postId) {
         if (postId == null || userUtil.getUser().getId() == null) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         likeService.deletePostLike(postId, userUtil.getUser().getId());
-        return Response.builder().ok().build();
+        return Response.ok();
     }
     @Override
     public Response favoritePost(Long postId) {
         if (postId == null || userUtil.getUser().getId() == null) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         favoriteService.createPostFavorite(postId, userUtil.getUser().getId());
-        return Response.builder().ok().build();
+        return Response.ok();
     }
     @Override
     public Response unFavoritePost(Long postId) {
         if (postId == null || userUtil.getUser().getId() == null) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         favoriteService.deletePostFavorite(postId, userUtil.getUser().getId());
-        return Response.builder().ok().build();
+        return Response.ok();
     }
 
     @Override

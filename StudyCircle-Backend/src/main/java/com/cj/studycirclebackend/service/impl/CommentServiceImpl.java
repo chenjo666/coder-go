@@ -38,9 +38,9 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     @Override
     public Response getAllCommentsByPost(Long postId, String orderMode, Integer currentPage, Integer pageSize) {
         if (postId == null || StringUtils.isBlank(orderMode) || currentPage == null || pageSize == null) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
-        return Response.builder().ok().data(getCommentVOs(postId, orderMode, currentPage, pageSize)).build();
+        return Response.ok(getCommentVOs(postId, orderMode, currentPage, pageSize));
     }
     @Override
     public Response getAllCommentsByComment(Long commentId) {
@@ -49,14 +49,14 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         for (Comment comment :comments) {
             childCommentListVO.add(getCommentVO(comment));
         }
-        return Response.builder().ok().data(childCommentListVO).build();
+        return Response.ok(childCommentListVO);
     }
 
     /*********************************** 三个更新评论业务 ***********************************/
     @Override
     public Response createComment(Long objectId, String objectType, String content) {
         if (objectId == null || StringUtils.isBlank(objectType) || StringUtils.isBlank(content)) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         Comment comment = new Comment();
         comment.setUserId(userUtil.getUser().getId());
@@ -75,23 +75,23 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         }
         eventProducer.createEvent(event);
 
-        return Response.builder().ok().build();
+        return Response.ok();
     }
     @Override
     public Response deleteComment(Long commentId) {
         if (commentId == null) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         removeById(commentId);
-        return Response.builder().ok().build();
+        return Response.ok();
     }
     @Override
     public Response updateComment(Long commentId, String newContent) {
         if (commentId == null || StringUtils.isBlank(newContent)) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         update(new UpdateWrapper<Comment>().set("content", newContent).eq("id", commentId));
-        return Response.builder().ok().build();
+        return Response.ok();
     }
 
     /*********************************** 评论辅助工具业务 ***********************************/
@@ -211,17 +211,17 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     @Override
     public Response likeComment(Long commentId) {
         if (commentId == null || userUtil.getUser() == null) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         likeService.createCommentLike(commentId, userUtil.getUser().getId());
-        return Response.builder().ok().build();
+        return Response.ok();
     }
     @Override
     public Response dislikeComment(Long commentId) {
         if (commentId == null || userUtil.getUser() == null) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         likeService.deleteCommentLike(commentId, userUtil.getUser().getId());
-        return Response.builder().ok().build();
+        return Response.ok();
     }
 }

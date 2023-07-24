@@ -84,10 +84,10 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
     @Override
     public Response deleteMessage(Long messageId) {
         if (messageId == null) {
-            return Response.builder().badRequest().build();
+            return Response.badRequest();
         }
         update(new UpdateWrapper<Message>().set("is_deleted", 1).eq("id", messageId));
-        return Response.builder().ok().build();
+        return Response.ok();
     }
 
     @Override

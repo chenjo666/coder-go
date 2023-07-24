@@ -32,7 +32,7 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
     public Response getConversationAll() {
         User user = userUtil.getUser();
         if (user == null) {
-            return Response.builder().code(-1).msg("请先登录").build();
+            return Response.invalidOperation();
         }
         Map<String, Object> data = new HashMap<>();
         List<ConversationVO> conversationListVO = new ArrayList<>();
@@ -70,7 +70,7 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
             data.put("messageListVO", messageListVO);
         }
 
-        return Response.builder().code(200).msg("").data(data).build();
+        return Response.ok(data);
     }
 
 
@@ -78,49 +78,40 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
     public Response addConversation() {
         User user = userUtil.getUser();
         if (user == null) {
-            return Response.builder().code(-1).msg("请先登录！").build();
+            return Response.invalidOperation();
         }
         Conversation conversation = new Conversation();
         conversation.setUserId(user.getId());
         conversation.setName("新对话");
         conversation.setCreateTime(new Date());
         conversation.setIsDeleted(0);
-        boolean res = save(conversation);
-        if (res) {
-            return Response.builder().code(-1).msg("服务器繁忙，请等待！").build();
-        }
+        save(conversation);
         ConversationVO conversationVO = new ConversationVO();
         conversationVO.setConversationId(conversation.getId());
         conversationVO.setConversationName(conversation.getName());
 
-        return Response.builder().code(200).data(conversationVO).build();
+        return Response.ok(conversationVO);
     }
 
     @Override
     public Response delConversation(Long conversationId) {
         if (conversationId == null) {
-            throw new IllegalArgumentException("参数不能为空！");
+            return Response.badRequest();
         }
         Conversation conversation = getById(conversationId);
-        if (conversation == null) {
-            return Response.builder().code(-1).msg("该对话不存在！").build();
-        }
         conversation.setIsDeleted(1);
         updateById(conversation);
-        return Response.builder().code(200).msg("删除成功").build();
+        return Response.ok();
     }
 
     @Override
     public Response setConversationName(Long conversationId, String newName) {
         if (conversationId == null || newName == null) {
-            throw new IllegalArgumentException("参数不能为空！");
+            return Response.badRequest();
         }
         Conversation conversation = getById(conversationId);
-        if (conversation == null) {
-            return Response.builder().code(-1).msg("出现未知错误").build();
-        }
         conversation.setName(newName);
         updateById(conversation);
-        return Response.builder().code(200).msg("删除成功").build();
+        return Response.ok();
     }
 }
