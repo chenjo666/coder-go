@@ -50,7 +50,7 @@ public class ConversationController {
      */
     @GetMapping("/{conversation_id}/messages")
     public Response getMessages(@PathVariable("conversation_id") Long conversationId) {
-        List<MessageVO> messageVOList = messageService.getMessages(conversationId);
+        List<MessageVO> messageVOList = messageService.getMessageVOList(conversationId);
         return Response.builder().code(200).data(messageVOList).build();
     }
     /**

@@ -5,6 +5,8 @@ import com.cj.studycirclebackend.dto.Response;
 import com.cj.studycirclebackend.pojo.Conversation;
 import com.cj.studycirclebackend.vo.ConversationVO;
 
+import java.util.List;
+
 public interface ConversationService extends IService<Conversation> {
 
     Response getConversationAll();
@@ -16,6 +18,12 @@ public interface ConversationService extends IService<Conversation> {
 
     Response setConversationName(Long conversationId, String messageContent);
 
+    /**
+     * VO 对象
+     */
     ConversationVO getConversationVO(Conversation conversation);
+    List<ConversationVO> getConversationVOList(Long userId);
+    List<ConversationVO> getConversationVOList(List<Conversation> conversationList);
+
 
 }

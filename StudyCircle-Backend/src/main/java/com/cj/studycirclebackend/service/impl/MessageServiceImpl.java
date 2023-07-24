@@ -82,6 +82,16 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
         messageVO.setRole(message.getRole());
         return messageVO;
     }
+
+    @Override
+    public List<MessageVO> getMessageVOList(List<Message> messageList) {
+        List<MessageVO> messageVOList = new ArrayList<>(messageList.size());
+        for (Message message : messageList) {
+            messageVOList.add(getMessageVO(message));
+        }
+        return messageVOList;
+    }
+
     @Override
     public Response deleteMessage(Long messageId) {
         if (messageId == null) {
@@ -115,7 +125,7 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
     }
 
     @Override
-    public List<MessageVO> getMessages(Long conversationId) {
+    public List<MessageVO> getMessageVOList(Long conversationId) {
         if (conversationId == null) {
             return null;
         }

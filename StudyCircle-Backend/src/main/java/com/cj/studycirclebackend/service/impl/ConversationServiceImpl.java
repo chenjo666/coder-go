@@ -15,6 +15,7 @@ import com.cj.studycirclebackend.service.ConversationService;
 import com.cj.studycirclebackend.util.DataUtil;
 import com.cj.studycirclebackend.util.UserUtil;
 import jakarta.annotation.Resource;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -36,32 +37,13 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
             return Response.invalidOperation();
         }
         Map<String, Object> data = new HashMap<>();
-        List<ConversationVO> conversationListVO = new ArrayList<>();
         // 查询当前用户的全部对话信息，倒序排序
-        List<Conversation> conversationList = list(
-                new QueryWrapper<Conversation>()
-                        .eq("user_id", user.getId())
-                        .eq("is_deleted", 0)
-                        .orderByDesc("create_time"));
-        if (conversationList != null) {
-            for (Conversation conversation : conversationList) {
-                ConversationVO conversationVO = getConversationVO(conversation);
-                conversationListVO.add(conversationVO);
-            }
-            // 查询最新对话的全部消息
-            List<MessageVO> messageListVO = new ArrayList<>();
-            List<Message> messageList = messageService.list(
-                    new QueryWrapper<Message>().
-                            eq("conversation_id", conversationList.get(0).getId())
-                            .eq("is_deleted", 0)
-                            .orderByAsc("send_time"));
-            if (messageList != null){
-                for (Message conversationMessage : messageList) {
-                    MessageVO messageVO = messageService.getMessageVO(conversationMessage);
-                    messageListVO.add(messageVO);
-                }
-            }
-            data.put("conversationListVO", conversationListVO);
+        List<ConversationVO> conversationVOList = getConversationVOList(user.getId());
+
+        // 第一个对话的消息记录
+        if (conversationVOList != null) {
+            List<MessageVO> messageListVO = messageService.getMessageVOList(conversationVOList.get(0).getConversationId());
+            data.put("conversationListVO", conversationVOList);
             data.put("messageListVO", messageListVO);
         }
 
@@ -98,7 +80,7 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
 
     @Override
     public Response setConversationName(Long conversationId, String newName) {
-        if (conversationId == null || newName == null) {
+        if (conversationId == null || StringUtils.isBlank(newName)) {
             return Response.badRequest();
         }
         Conversation conversation = getById(conversationId);
@@ -107,8 +89,34 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
         return Response.ok();
     }
 
+
+    @Override
+    public List<ConversationVO> getConversationVOList(Long userId) {
+        if (userId == null) return null;
+        // 查询当前用户的全部对话信息，倒序排序
+        List<Conversation> conversationList = list(
+                new QueryWrapper<Conversation>()
+                        .eq("user_id", userId)
+                        .eq("is_deleted", 0)
+                        .orderByDesc("create_time"));
+        return getConversationVOList(conversationList);
+    }
+
+    @Override
+    public List<ConversationVO> getConversationVOList(List<Conversation> conversationList) {
+        if (conversationList == null) return null;
+
+        List<ConversationVO> conversationVOList = new ArrayList<>(conversationList.size());
+        for (Conversation conversation : conversationList) {
+            conversationVOList.add(getConversationVO(conversation));
+        }
+        return conversationVOList;
+    }
+
+
     @Override
     public ConversationVO getConversationVO(Conversation conversation) {
+        if (conversation == null) return null;
         ConversationVO conversationVO = new ConversationVO();
         conversationVO.setConversationId(conversation.getId());
         conversationVO.setConversationName(conversation.getName());
