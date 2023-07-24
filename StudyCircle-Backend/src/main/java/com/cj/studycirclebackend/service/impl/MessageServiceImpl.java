@@ -73,7 +73,8 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
         return messageVOList;
     }
 
-    private MessageVO getMessageVO(Message message) {
+    @Override
+    public MessageVO getMessageVO(Message message) {
         MessageVO messageVO = new MessageVO();
         messageVO.setMessageId(message.getId());
         messageVO.setContent(message.getContent());

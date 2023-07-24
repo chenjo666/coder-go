@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cj.studycirclebackend.dao.ConversationMapper;
 import com.cj.studycirclebackend.pojo.Message;
+import com.cj.studycirclebackend.service.MessageService;
 import com.cj.studycirclebackend.vo.ConversationVO;
 import com.cj.studycirclebackend.vo.MessageVO;
 import com.cj.studycirclebackend.dao.MessageMapper;
@@ -26,7 +27,7 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
     @Resource
     private UserUtil userUtil;
     @Resource
-    private MessageMapper messageMapper;
+    private MessageService messageService;
 
     @Override
     public Response getConversationAll() {
@@ -44,25 +45,19 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
                         .orderByDesc("create_time"));
         if (conversationList != null) {
             for (Conversation conversation : conversationList) {
-                ConversationVO conversationVO = new ConversationVO();
-                conversationVO.setConversationId(conversation.getId());
-                conversationVO.setConversationName(conversation.getName());
+                ConversationVO conversationVO = getConversationVO(conversation);
                 conversationListVO.add(conversationVO);
             }
             // 查询最新对话的全部消息
             List<MessageVO> messageListVO = new ArrayList<>();
-            List<Message> messageList = messageMapper.selectList(
+            List<Message> messageList = messageService.list(
                     new QueryWrapper<Message>().
                             eq("conversation_id", conversationList.get(0).getId())
                             .eq("is_deleted", 0)
                             .orderByAsc("send_time"));
             if (messageList != null){
                 for (Message conversationMessage : messageList) {
-                    MessageVO messageVO = new MessageVO();
-                    messageVO.setMessageId(conversationMessage.getId());
-                    messageVO.setRole(conversationMessage.getRole());
-                    messageVO.setContent(conversationMessage.getContent());
-                    messageVO.setSendTime(DataUtil.formatDateTime(conversationMessage.getSendTime()));
+                    MessageVO messageVO = messageService.getMessageVO(conversationMessage);
                     messageListVO.add(messageVO);
                 }
             }
@@ -86,11 +81,8 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
         conversation.setCreateTime(new Date());
         conversation.setIsDeleted(0);
         save(conversation);
-        ConversationVO conversationVO = new ConversationVO();
-        conversationVO.setConversationId(conversation.getId());
-        conversationVO.setConversationName(conversation.getName());
 
-        return Response.ok(conversationVO);
+        return Response.ok(getConversationVO(conversation));
     }
 
     @Override
@@ -113,5 +105,13 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
         conversation.setName(newName);
         updateById(conversation);
         return Response.ok();
+    }
+
+    @Override
+    public ConversationVO getConversationVO(Conversation conversation) {
+        ConversationVO conversationVO = new ConversationVO();
+        conversationVO.setConversationId(conversation.getId());
+        conversationVO.setConversationName(conversation.getName());
+        return conversationVO;
     }
 }
