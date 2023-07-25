@@ -25,7 +25,7 @@ public class AIChatUtil {
 
     @Value("${open.ai.default.model}")
     private String model;
-    @Value("${open.ai.key2}")
+    @Value("${open.ai.key}")
     private String apiKey;
     @Value("${open.ai.api.url}")
     private String apiUrl;
@@ -39,7 +39,6 @@ public class AIChatUtil {
         params.put("model", model);
         params.put("messages", messages);
 
-        JSONObject jsonObject = null;
         Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
         try {
             String body = HttpRequest.post(apiUrl)
@@ -49,11 +48,11 @@ public class AIChatUtil {
                     .setProxy(proxy)
                     .execute()
                     .body();
-            jsonObject = JSONUtil.parseObj(body);
+            JSONObject jsonObject = JSONUtil.parseObj(body);
+            return jsonObjectToAIResponse(jsonObject);
         } catch (HttpException | ConvertException e) {
             return null;
         }
-        return jsonObjectToAIResponse(jsonObject);
     }
 
 

@@ -21,7 +21,7 @@ public class LikeServiceImpl extends ServiceImpl<LikeMapper, Like> implements Li
     @Override
     public void createPostLike(Long postId, Long userId) {
         String key = RedisUtil.getPostLikeKey(postId);
-        redisTemplate.opsForSet().add(key, userId);
+        redisTemplate.opsForZSet().add(key, userId, System.currentTimeMillis());
 
         // 点赞事件
         Event event = new LikePostEvent(Topic.LIKE, NoticeType.LIKE_POST.getValue(), postId, userId);
@@ -31,7 +31,7 @@ public class LikeServiceImpl extends ServiceImpl<LikeMapper, Like> implements Li
     @Override
     public void createCommentLike(Long commentId, Long userId) {
         String key = RedisUtil.getCommentLikeKey(commentId);
-        redisTemplate.opsForSet().add(key, userId);
+        redisTemplate.opsForZSet().add(key, userId, System.currentTimeMillis());
 
         // 点赞事件
         Event event = new LikeCommentEvent(Topic.LIKE, NoticeType.LIKE_COMMENT.getValue(), commentId, userId);
@@ -41,36 +41,36 @@ public class LikeServiceImpl extends ServiceImpl<LikeMapper, Like> implements Li
     @Override
     public void deletePostLike(Long postId, Long userId) {
         String key = RedisUtil.getPostLikeKey(postId);
-        redisTemplate.opsForSet().remove(key, userId);
+        redisTemplate.opsForZSet().remove(key, userId);
     }
 
     @Override
     public void deleteCommentLike(Long commentId, Long userId) {
         String key = RedisUtil.getCommentLikeKey(commentId);
-        redisTemplate.opsForSet().remove(key, userId);
+        redisTemplate.opsForZSet().remove(key, userId);
     }
 
     @Override
     public Long getPostLikeTotal(Long postId) {
         String key = RedisUtil.getPostLikeKey(postId);
-        return redisTemplate.opsForSet().size(key);
+        return redisTemplate.opsForZSet().size(key);
     }
 
     @Override
     public Long getCommentLikeTotal(Long commentId) {
         String key = RedisUtil.getCommentLikeKey(commentId);
-        return redisTemplate.opsForSet().size(key);
+        return redisTemplate.opsForZSet().size(key);
     }
 
     @Override
     public boolean isLikePostByUser(Long postId, Long userId) {
         String key = RedisUtil.getPostLikeKey(postId);
-        return Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(key, userId));
+        return null != redisTemplate.opsForZSet().rank(key, userId);
     }
 
     @Override
     public boolean isLikeCommentByUser(Long commentId, Long userId) {
         String key = RedisUtil.getCommentLikeKey(commentId);
-        return Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(key, userId));
+        return null != redisTemplate.opsForZSet().rank(key, userId);
     }
 }

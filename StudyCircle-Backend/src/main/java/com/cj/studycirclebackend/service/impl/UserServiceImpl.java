@@ -1,5 +1,6 @@
 package com.cj.studycirclebackend.service.impl;
 
+import cn.hutool.extra.mail.MailUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cj.studycirclebackend.dto.Response;
@@ -15,6 +16,7 @@ import com.cj.studycirclebackend.service.FollowService;
 import com.cj.studycirclebackend.service.TicketService;
 import com.cj.studycirclebackend.service.UserService;
 import com.cj.studycirclebackend.util.DataUtil;
+import com.cj.studycirclebackend.util.EmailUtil;
 import com.cj.studycirclebackend.util.RedisUtil;
 import com.cj.studycirclebackend.vo.UserVO;
 import com.cj.studycirclebackend.dao.UserMapper;
@@ -47,6 +49,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private FollowService followService;
     @Resource
     private UserUtil userUtil;
+    @Resource
+    private EmailUtil emailUtil;
     @Override
     public Response login(String email, String password, HttpServletResponse response) {
         if (StringUtils.isBlank(email) || StringUtils.isBlank(password)) {
@@ -113,9 +117,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 用户注册但未激活
         String uuidCode = DataUtil.generateUUID();
 
+        // 同步发送邮件
+        emailUtil.send(email, "您正在注册学友圈账号，这是您的验证码", uuidCode);
+
         // 异步发送邮件
-        Event mailEvent = new SendMailEvent(Topic.MAIL, NoticeType.SEND_MAIL.getValue(), email, "您正在注册学友圈账号，这是您的验证码", uuidCode);
-        eventProducer.createEvent(mailEvent);
+//        Event mailEvent = new SendMailEvent(Topic.MAIL, NoticeType.SEND_MAIL.getValue(), email, "您正在注册学友圈账号，这是您的验证码", uuidCode);
+//        eventProducer.createEvent(mailEvent);
 
         if (user != null) {
             // 增加激活码

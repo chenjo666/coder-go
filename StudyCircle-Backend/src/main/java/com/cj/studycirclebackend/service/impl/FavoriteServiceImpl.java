@@ -24,8 +24,12 @@ public class FavoriteServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> i
 
     @Override
     public void createPostFavorite(Long postId, Long userId) {
+        // 收藏帖子的用户
         String key = RedisUtil.getPostFavoriteKey(postId);
-        redisTemplate.opsForSet().add(key, userId);
+        redisTemplate.opsForZSet().add(key, userId, System.currentTimeMillis());
+        // 某人收藏的帖子
+        String userKey = RedisUtil.getUserFavoriteKey(userId);
+        redisTemplate.opsForZSet().add(userKey, postId, System.currentTimeMillis());
 
         // 收藏事件
         Event event = new FavoritePostEvent(Topic.FAVORITE, NoticeType.FAVORITE_POST.getValue(), postId, userId);
@@ -35,19 +39,23 @@ public class FavoriteServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> i
     @Override
     public void deletePostFavorite(Long postId, Long userId) {
         String key = RedisUtil.getPostFavoriteKey(postId);
-        redisTemplate.opsForSet().remove(key, userId);
+        redisTemplate.opsForZSet().remove(key, userId);
+        // 某人收藏的帖子
+        String userFavoriteKey = RedisUtil.getUserFavoriteKey(userId);
+        redisTemplate.opsForZSet().remove(userFavoriteKey, postId);
+
     }
 
     @Override
     public Long getPostFavoriteTotal(Long postId) {
         String key = RedisUtil.getPostFavoriteKey(postId);
-        return redisTemplate.opsForSet().size(key);
+        return redisTemplate.opsForZSet().size(key);
     }
 
     @Override
     public boolean isFavoritePostByUser(Long postId, Long userId) {
         String key = RedisUtil.getPostFavoriteKey(postId);
-        return Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(key, userId));
+        return null != redisTemplate.opsForZSet().rank(key, userId);
     }
 
 }

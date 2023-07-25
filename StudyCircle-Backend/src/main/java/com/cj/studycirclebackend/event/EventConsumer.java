@@ -93,9 +93,8 @@ public class EventConsumer {
         if (!checkRecord(record)) {
             return;
         }
-        Event event = JSONObject.parseObject(record.value().toString(), Event.class);
-        logger.info("User send mail event: {}", event);
         SendMailEvent sendMailEvent = JSONObject.parseObject(record.value().toString(), SendMailEvent.class);
+        logger.info("User send mail event: {}", sendMailEvent);
         emailUtil.send(sendMailEvent.getTo(), sendMailEvent.getSubject(), sendMailEvent.getText());
     }
     private boolean checkRecord(ConsumerRecord record) {

@@ -28,10 +28,10 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
 
     @Override
     public void createFollowUser(Long userFromId, Long userToId) {
-        String followingKey = RedisUtil.getUserFOLLOWINGKey(userFromId);
-        redisTemplate.opsForSet().add(followingKey, userToId);
+        String followingKey = RedisUtil.getUserFollowingKey(userFromId);
+        redisTemplate.opsForZSet().add(followingKey, userToId, System.currentTimeMillis());
         String followerKey = RedisUtil.getUserFollowerKey(userToId);
-        redisTemplate.opsForSet().add(followerKey, userFromId);
+        redisTemplate.opsForZSet().add(followerKey, userFromId, System.currentTimeMillis());
 
         // 关注事件
         Event followEvent = new FollowUserEvent(Topic.FOLLOW, NoticeType.FOLLOW_USER.getValue(), userFromId, userToId);
@@ -40,27 +40,27 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
 
     @Override
     public void deleteFollowUser(Long userFromId, Long userToId) {
-        String followingKey = RedisUtil.getUserFOLLOWINGKey(userFromId);
-        redisTemplate.opsForSet().remove(followingKey, userToId);
+        String followingKey = RedisUtil.getUserFollowingKey(userFromId);
+        redisTemplate.opsForZSet().remove(followingKey, userToId);
         String followerKey = RedisUtil.getUserFollowerKey(userToId);
-        redisTemplate.opsForSet().remove(followerKey, userFromId);
+        redisTemplate.opsForZSet().remove(followerKey, userFromId);
     }
 
     @Override
     public boolean isFollowedByUser(Long userFromId, Long userToId) {
-        String key = RedisUtil.getUserFOLLOWINGKey(userFromId);
-        return Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(key, userToId));
+        String key = RedisUtil.getUserFollowingKey(userFromId);
+        return null != redisTemplate.opsForZSet().rank(key, userToId);
     }
 
     @Override
     public Set<Object> getUserFollowers(Long userId) {
         String key = RedisUtil.getUserFollowerKey(userId);
-        return redisTemplate.opsForSet().members(key);
+        return redisTemplate.opsForZSet().reverseRangeByScore(key, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY);
     }
 
     @Override
     public Set<Object> getUserFollowings(Long userId) {
-        String key = RedisUtil.getUserFOLLOWINGKey(userId);
-        return redisTemplate.opsForSet().members(key);
+        String key = RedisUtil.getUserFollowingKey(userId);
+        return redisTemplate.opsForZSet().reverseRangeByScore(key, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY);
     }
 }
