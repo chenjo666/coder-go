@@ -22,6 +22,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     @Resource
     private LetterService letterService;
     public Map<Long, WebSocketSession> clients = new ConcurrentHashMap<>();
+    public Map<WebSocketSession, Long> mapping = new ConcurrentHashMap<>();
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         // 在建立连接后触发，可以执行初始化逻辑
@@ -30,6 +31,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
         logger.info("open: {}", session);
         this.clients.put(userId, session);
+        this.mapping.put(session, userId);
         super.afterConnectionEstablished(session);
     }
 
@@ -55,15 +57,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         // 在连接关闭后触发，进行一些清理工作
-        Long userIdToRemove = null;
-        for (Map.Entry<Long, WebSocketSession> entry : clients.entrySet()) {
-            if (entry.getValue() == session) {
-                userIdToRemove = entry.getKey();
-                break;
-            }
-        }
-        if (userIdToRemove != null) {
-            clients.remove(userIdToRemove);
+        Long userId = mapping.get(session);
+        if (userId != null) {
+            mapping.remove(session);
+            clients.remove(userId);
         }
         logger.info("close websocket: {}" , session);
         super.afterConnectionClosed(session, status);
