@@ -22,11 +22,7 @@ public class PostServiceTests {
 
     @Test
     public void insertData() {
-        List<Post> list = postService.list();
-        for (Post post : list) {
-            post.setTitleCompletion(new Completion(new String[]{post.getTitle()}));
-        }
-        postService.updateBatchById(list);
+
     }
     @Test
     public void reSetType() {

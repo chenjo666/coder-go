@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+
 @Aspect
 @Component
 @Order(1)
@@ -29,7 +30,7 @@ public class ApiLogAspect {
         logger.info("请求路径:  {}", request.getRequestURL().toString());
         logger.info("请求方法:  {}", request.getMethod()); // 打印 Http method
         logger.info("请求接口:  {}.{}", joinPoint.getSignature().getDeclaringTypeName(), joinPoint.getSignature().getName()); // 打印调用 controller 的全路径以及执行方法
-        logger.info("请求参数:  {}", joinPoint.getArgs()); // 打印请求入参
+        logger.info("请求参数:  {}", JSONObject.toJSONString(joinPoint.getArgs())); // 打印请求入参
         logger.info("用户地址:  {}", request.getRemoteAddr());                      // 打印请求的 IP
     }
 
@@ -39,7 +40,7 @@ public class ApiLogAspect {
         Object result = proceedingJoinPoint.proceed();
         logger.info("响应结果:  {}", JSONObject.toJSONString(result));
         logger.info("消耗时间:  {}ms", System.currentTimeMillis() - startTime);
-        logger.info("===========================结束===========================" + Character.LINE_SEPARATOR);
+        logger.info("===========================结束===========================");
         return result;
     }
 }

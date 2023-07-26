@@ -7,7 +7,10 @@ import axios from 'axios'
 import PostEditor from './PostEditor.vue';
 import router from '../router'
 
-const user = JSON.parse(localStorage.getItem("user") ?? '');
+const user = ref({
+    id: '1',
+    avatar: ''
+});
 const navChoice = ref('home')
 const loginFormVisible = ref(false)
 const registerFormVisible = ref(false)

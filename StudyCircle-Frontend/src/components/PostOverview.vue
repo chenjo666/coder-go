@@ -18,19 +18,21 @@ const errorMsg = (msg) => {
         type: 'error',
     })
 }
+const router = useRouter();
 /**************************************** 请求数据区 *****************************************/
 // 搜索关键字
 // 帖子类型[all、discussion、help、sharing、tutorial、emotional、news、review、survey]
-// 排序规则[normal、newest、hotest]
 // 页数
+const POST_TYPE = ['all', 'discussion', 'help', 'sharing', 'tutorial', 'emotional', 'news', 'review', 'survey', 'other']
+const POST_SORT = ['default', 'new', 'hot', 'top']
+const PAGE_SIZE = 10
+
 const keyInput = ref('')
 const keyWord = ref('')
-const pageSize = ref(10)
 const currentPage = ref(1)
 const activeIndex = ref('1')
 const postType = ref('all')
-const orderMode = ref('normal')
-const router = useRouter();
+const orderMode = ref('default')
 // 在参数变化时刷新数据（示例代码，排序方式变为【综合】，页码为【第一页】）
 
 // 界面展示视图-帖子(avatar, postTitle, isTop, isGem, content, views, likes, comments, publish_time, [postTotal])
@@ -52,9 +54,6 @@ const postOverviewVO = ref({
         ],
     "postTotal":20
 })
-const keywordSuggestions = ref({
-    
-})
 
 /********************************************************** 界面事件区 ***************************************************** **/
 onMounted(() => {
@@ -70,8 +69,8 @@ onMounted(() => {
 const clickSearchEvent = () => {
     // 1. 关键字修改
     keyWord.value = keyInput.value
-    postType.value = 'all'
-    orderMode.value = 'normal'
+    postType.value = POST_TYPE[0]
+    orderMode.value = POST_SORT[0]
     currentPage.value = 1
     // 2. 发起请求
     getPostListRequest()
@@ -84,7 +83,7 @@ const clickSearchEvent = () => {
 // （2）点击帖子类型事件
 const clickPostTypeEvent = (newPostType: string) => {
     postType.value = newPostType
-    orderMode.value = 'normal'
+    orderMode.value = POST_SORT[0]
     currentPage.value = 1
 
     getPostListRequest()
@@ -120,9 +119,6 @@ const clickPostDetailEvent = (postId) => {
     router.push(`/postDetail/${postId}`)
 }
 
-const handleSelect = (item: string) => {
-  keyInput.value = item
-}
 /******************************************************* 数据请求区 *******************************************************/
 // （1）请求全部帖子
 const getPostListRequest = () => {
@@ -132,7 +128,7 @@ const getPostListRequest = () => {
             'orderMode': orderMode.value,
             'keyWord': keyWord.value,
             'currentPage': currentPage.value,
-            'pageSize': pageSize.value
+            'pageSize': PAGE_SIZE
         }
     }).then(response => {
         if (response.status !== 200) {
@@ -173,7 +169,7 @@ const getSuggestionRequest = (queryString: string, cb: (arg: any) => void) => {
             <el-container>
                 <el-header>
                     <div class="post-search">
-                        <el-input placeholder="请输入">
+                        <el-input v-model="keyInput" placeholder="请输入" >
                             <template #append>
                                 <el-button :icon="Search" @click="clickSearchEvent()" />
                             </template>
@@ -186,26 +182,28 @@ const getSuggestionRequest = (queryString: string, cb: (arg: any) => void) => {
                     <div class="post-menu">
                         <div class="post-menu-type">
                             <el-menu :default-active="activeIndex" mode="horizontal">
-                                <el-menu-item index="1" @click="clickPostTypeEvent('all')">全部</el-menu-item>
-                                <el-menu-item index="2" @click="clickPostTypeEvent('discussion')">讨论</el-menu-item>
-                                <el-menu-item index="3" @click="clickPostTypeEvent('help')">求助</el-menu-item>
-                                <el-menu-item index="4" @click="clickPostTypeEvent('sharing')">分享</el-menu-item>
-                                <el-menu-item index="5" @click="clickPostTypeEvent('tutorial')">教程</el-menu-item>
-                                <el-menu-item index="6" @click="clickPostTypeEvent('emotional')">情感</el-menu-item>
-                                <el-menu-item index="7" @click="clickPostTypeEvent('news')">新闻</el-menu-item>
-                                <el-menu-item index="8" @click="clickPostTypeEvent('review')">评价</el-menu-item>
-                                <el-menu-item index="9" @click="clickPostTypeEvent('survey')">调查</el-menu-item>
-                                <el-menu-item index="10" @click="clickPostTypeEvent('other')">其它</el-menu-item>
+                                <el-menu-item index="1" @click="clickPostTypeEvent(POST_TYPE[0])">全部</el-menu-item>
+                                <el-menu-item index="2" @click="clickPostTypeEvent(POST_TYPE[1])">讨论</el-menu-item>
+                                <el-menu-item index="3" @click="clickPostTypeEvent(POST_TYPE[2])">求助</el-menu-item>
+                                <el-menu-item index="4" @click="clickPostTypeEvent(POST_TYPE[3])">分享</el-menu-item>
+                                <el-menu-item index="5" @click="clickPostTypeEvent(POST_TYPE[4])">教程</el-menu-item>
+                                <el-menu-item index="6" @click="clickPostTypeEvent(POST_TYPE[5])">情感</el-menu-item>
+                                <el-menu-item index="7" @click="clickPostTypeEvent(POST_TYPE[6])">新闻</el-menu-item>
+                                <el-menu-item index="8" @click="clickPostTypeEvent(POST_TYPE[7])">评价</el-menu-item>
+                                <el-menu-item index="9" @click="clickPostTypeEvent(POST_TYPE[8])">调查</el-menu-item>
+                                <el-menu-item index="10" @click="clickPostTypeEvent(POST_TYPE[9])">其它</el-menu-item>
                             </el-menu>
                         </div>
                         <div class="post-menu-order">
                             <div>
-                                <el-button text :bg="orderMode === 'normal'"
-                                    @click="clickOrderModeEvent('normal')">综合</el-button>
-                                <el-button text :bg="orderMode === 'newest'"
-                                    @click="clickOrderModeEvent('newest')">最新</el-button>
-                                <el-button text :bg="orderMode === 'hotest'"
-                                    @click="clickOrderModeEvent('hotest')">最热</el-button>
+                                <el-button text :bg="orderMode === POST_SORT[0]"
+                                    @click="clickOrderModeEvent(POST_SORT[0])">综合</el-button>
+                                <el-button text :bg="orderMode === POST_SORT[1]"
+                                    @click="clickOrderModeEvent(POST_SORT[1])">最新</el-button>
+                                <el-button text :bg="orderMode === POST_SORT[2]"
+                                    @click="clickOrderModeEvent(POST_SORT[2])">最热</el-button>
+                                    <el-button text :bg="orderMode === POST_SORT[3]"
+                                    @click="clickOrderModeEvent(POST_SORT[3])">精华</el-button>
                             </div>
                             <p>共 {{ postOverviewVO.postTotal }} 条搜索结果</p>
                         </div>
@@ -245,7 +243,7 @@ const getSuggestionRequest = (queryString: string, cb: (arg: any) => void) => {
                     <!-- 分页按钮 -->
                     <div class="center-pagination">
                         <el-pagination @click="clickPageEvent()" v-model:current-page="currentPage" background
-                            layout="prev, pager, next" :total="postOverviewVO.postTotal" :default-page-size="pageSize" />
+                            layout="prev, pager, next" :total="postOverviewVO.postTotal" :default-page-size="PAGE_SIZE" />
                     </div>
                 </el-footer>
             </el-container>

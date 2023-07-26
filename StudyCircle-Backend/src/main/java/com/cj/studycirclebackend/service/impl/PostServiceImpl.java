@@ -3,8 +3,8 @@ package com.cj.studycirclebackend.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cj.studycirclebackend.constants.PostSort;
 import com.cj.studycirclebackend.enums.CommentOrderMode;
-import com.cj.studycirclebackend.enums.PostOrderMode;
 import com.cj.studycirclebackend.enums.PostType;
 import com.cj.studycirclebackend.service.*;
 import com.cj.studycirclebackend.util.RedisUtil;
@@ -171,20 +171,6 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         for (Post post : posts) {
             postOverviewVOs.add(getPostOverviewVO(post));
         }
-        // 填补其它业务数据
-        for (PostOverviewVO postOverviewVO : postOverviewVOs) {
-            // 用户服务
-            User user = userService.getById(postOverviewVO.getUserId());
-            postOverviewVO.setUserAvatar(user.getAvatar());
-            // 关注服务
-            Long postLikes = likeService.getPostLikeTotal(postOverviewVO.getPostId());
-            postOverviewVO.setPostLikes(postLikes);
-            // 统计服务
-            postOverviewVO.setPostViews(100L);
-            // 评论服务
-            Long postReplies = commentService.getPostRepliesByPostId(postOverviewVO.getPostId());
-            postOverviewVO.setPostReplies(postReplies);
-        }
         data.put("posts", postOverviewVOs);
 
         return Response.ok(data);
@@ -252,20 +238,11 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
             Highlight highlight = new Highlight(list);
             builder.withHighlightQuery(new HighlightQuery(highlight, Post.class));
         }
-
-        // 帖子排序规则
-        if (PostOrderMode.NORMAL.getValue().equals(order)) {
-            builder.withSort(Sort.by("isTop").descending());
-            builder.withSort(Sort.by("isGem").descending());
-            builder.withSort(Sort.by("score").descending());
-        } else if (PostOrderMode.NEWEST.getValue().equals(order)) {
-            builder.withSort(Sort.by("publishTime").descending());
-        } else if (PostOrderMode.HOTEST.getValue().equals(order)) {
-            builder.withSort(Sort.by("score").descending());
-        }
+        PostSort.queryOrder(builder, order);
 
         return builder;
     }
+
     // 构建查询条件 mysql
     private QueryWrapper<Post> getQueryWrapper(String type, String order, String key) {
         QueryWrapper<Post> queryWrapper = new QueryWrapper<>();
@@ -283,18 +260,8 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
                     );
         }
         // 帖子排序规则
-        if (PostOrderMode.NORMAL.getValue().equals(order)) {
-            queryWrapper
-                    .orderByDesc("is_top")
-                    .orderByDesc("is_gem")
-                    .orderByDesc("score");
-        } else if (PostOrderMode.NEWEST.getValue().equals(order)) {
-            queryWrapper
-                    .orderByDesc("publish_time");
-        } else if (PostOrderMode.HOTEST.getValue().equals(order)) {
-            queryWrapper
-                    .orderByDesc("score");
-        }
+        PostSort.queryOrder(queryWrapper, order);
+
         return queryWrapper;
     }
 
@@ -366,7 +333,6 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     // 转换 PostOverviewVO 对象
     @Override
     public PostOverviewVO getPostOverviewVO(Post post) {
-        Random random = new Random();
         PostOverviewVO postOverviewVO = new PostOverviewVO();
         // 帖子作者
         User author = userService.getById(post.getUserId());
@@ -381,7 +347,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         postOverviewVO.setTop(post.getIsTop() == 1);
         // 点赞数量
         Long count = likeService.getPostLikeTotal(post.getId());
-        postOverviewVO.setPostLikes((long) Math.toIntExact(count));
+        postOverviewVO.setPostLikes(count);
         // 评论
         long postReplies = commentService.getPostRepliesByPostId(post.getId());
         postOverviewVO.setPostReplies(postReplies);
@@ -437,23 +403,4 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         postPersonalVO.setPostLikes(likes);
         return postPersonalVO;
     }
-
-
-
-
-    // 综合排序（官方=>置顶=>普通，按分数）
-    // SELECT * FROM post
-    // WHERE type = 【postType】
-    // ORDER BY is_top desc, is_gem desc, score desc
-    // LIMIT 5, 5【(currentPage - 1) * pageSize, pageSize】
-
-    // 最新排序（纯时间）
-    // SELECT * FROM post
-    // WHERE type = 【postType】
-    // ORDER BY publish_time DESC
-
-    // 最热排序（纯分数）
-    // SELECT * FROM post
-    // WHERE type = 【postType】
-    // ORDER BY score DESC
 }

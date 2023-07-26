@@ -15,7 +15,9 @@ import org.springframework.stereotype.Component;
 @Order(2)
 public class ArgsValidationAspect {
     private static final Logger logger = LoggerFactory.getLogger(ArgsValidationAspect.class);
-    @Around("execution(* com.cj.studycirclebackend.controller.*.*(..))  && !execution(* com.cj.studycirclebackend.controller.PostController.searchPosts(..))")
+    @Around("execution(* com.cj.studycirclebackend.controller.*.*(..))  " +
+            "&& !execution(* com.cj.studycirclebackend.controller.PostController.searchPosts(..))" +
+            "&& !execution(* com.cj.studycirclebackend.controller.PostController.getPosts(..))")
     public Object validateParameters(ProceedingJoinPoint joinPoint) throws Throwable {
         Object[] args = joinPoint.getArgs();
         // 验证参数

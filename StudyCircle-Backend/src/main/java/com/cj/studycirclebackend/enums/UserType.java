@@ -1,8 +1,7 @@
 package com.cj.studycirclebackend.enums;
 
 public enum UserType {
-    ADMIN(0),
-    NORMAL(1);
+    ADMIN(0), NORMAL(1);
     private final int value;
 
     UserType(int value) {
