@@ -1,15 +1,10 @@
 package com.cj.studycirclebackend.service.impl;
 
-import cn.hutool.extra.mail.MailUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cj.studycirclebackend.dto.Response;
-import com.cj.studycirclebackend.enums.NoticeType;
 import com.cj.studycirclebackend.enums.UserStatus;
 import com.cj.studycirclebackend.enums.UserType;
-import com.cj.studycirclebackend.event.Event;
-import com.cj.studycirclebackend.event.SendMailEvent;
-import com.cj.studycirclebackend.event.Topic;
 import com.cj.studycirclebackend.pojo.Ticket;
 import com.cj.studycirclebackend.pojo.User;
 import com.cj.studycirclebackend.service.FollowService;

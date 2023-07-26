@@ -7,16 +7,16 @@ import com.cj.studycirclebackend.pojo.Notice;
 
 public interface NoticeService extends IService<Notice> {
 
-    boolean deleteAllNotice();
+    Response deleteAllNotice();
 
-    boolean deleteNotice(Long noticeId);
+    Response deleteNotice(Long noticeId);
 
 
     boolean createNotice(Long userFromId, Long userToId, Integer noticeType, Long postId);
 
     Response getNotice(Integer currentPage, Integer pageSize);
 
-    NoticeVO convertToNoticeVO(Notice notice);
+    NoticeVO getNoticeVO(Notice notice);
 
     boolean createLikePostNotice(Long postId, Long userId);
     boolean createLikeCommentNotice(Long commentId, Long userId);

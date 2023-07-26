@@ -5,11 +5,9 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.elasticsearch.annotations.CompletionField;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
-import org.springframework.data.elasticsearch.core.suggest.Completion;
 
 import java.util.Date;
 
@@ -41,6 +39,9 @@ public class Post {
     @TableField("is_gem")
     @Field(type= FieldType.Integer)
     private Integer isGem;
+    @TableField("reply_total")
+    @Field(type = FieldType.Long)
+    private Long replyTotal;
     @TableField("score")
     @Field(type= FieldType.Double)
     private Double score;

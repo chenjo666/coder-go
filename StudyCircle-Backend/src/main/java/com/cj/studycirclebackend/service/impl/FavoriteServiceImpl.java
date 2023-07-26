@@ -2,7 +2,7 @@ package com.cj.studycirclebackend.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cj.studycirclebackend.dao.FavoriteMapper;
-import com.cj.studycirclebackend.event.Topic;
+import com.cj.studycirclebackend.constants.NoticeTopic;
 import com.cj.studycirclebackend.service.FavoriteService;
 import com.cj.studycirclebackend.enums.NoticeType;
 import com.cj.studycirclebackend.event.FavoritePostEvent;
@@ -32,7 +32,7 @@ public class FavoriteServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> i
         redisTemplate.opsForZSet().add(userKey, postId, System.currentTimeMillis());
 
         // 收藏事件
-        Event event = new FavoritePostEvent(Topic.FAVORITE, NoticeType.FAVORITE_POST.getValue(), postId, userId);
+        Event event = new FavoritePostEvent(NoticeTopic.FAVORITE, NoticeType.FAVORITE_POST.getValue(), postId, userId);
         eventProducer.createEvent(event);
     }
 

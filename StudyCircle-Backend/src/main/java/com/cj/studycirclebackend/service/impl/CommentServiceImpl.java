@@ -3,10 +3,11 @@ package com.cj.studycirclebackend.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cj.studycirclebackend.constants.CommentObj;
+import com.cj.studycirclebackend.constants.CommentSort;
+import com.cj.studycirclebackend.constants.NoticeTopic;
 import com.cj.studycirclebackend.dao.CommentMapper;
 import com.cj.studycirclebackend.dto.Response;
-import com.cj.studycirclebackend.enums.CommentObjectType;
-import com.cj.studycirclebackend.enums.CommentOrderMode;
 import com.cj.studycirclebackend.enums.NoticeType;
 import com.cj.studycirclebackend.event.*;
 import com.cj.studycirclebackend.pojo.Comment;
@@ -68,10 +69,10 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         save(comment);
         // 评论事件
         Event event;
-        if (objectType.equals(CommentObjectType.POST.getValue())) {
-            event = new ReplyPostEvent(Topic.COMMENT, NoticeType.REPLY_POST.getValue(), objectId, userUtil.getUser().getId());
+        if (objectType.equals(CommentObj.POST)) {
+            event = new ReplyPostEvent(NoticeTopic.COMMENT, NoticeType.REPLY_POST.getValue(), objectId, userUtil.getUser().getId());
         } else {
-            event = new ReplyCommentEvent(Topic.COMMENT, NoticeType.REPLY_COMMENT.getValue(), objectId, userUtil.getUser().getId());
+            event = new ReplyCommentEvent(NoticeTopic.COMMENT, NoticeType.REPLY_COMMENT.getValue(), objectId, userUtil.getUser().getId());
         }
         eventProducer.createEvent(event);
 
@@ -97,14 +98,10 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     /*********************************** 评论辅助工具业务 ***********************************/
     private QueryWrapper<Comment> getQueryWrapper(Long postId, String orderMode, Integer currentPage, Integer pageSize) {
         QueryWrapper<Comment> queryWrapper = new QueryWrapper<Comment>()
-                .eq("object_type", CommentObjectType.POST.getValue())
+                .eq("object_type", CommentObj.POST)
                 .eq("object_id", postId);
         // 综合排序规则
-        if (CommentOrderMode.NORMAL.getValue().equals(orderMode)) {
-            queryWrapper.orderByDesc("score");
-        } else if (CommentOrderMode.NEWEST.getValue().equals(orderMode)) {
-            queryWrapper.orderByDesc("comment_time");
-        }
+        CommentSort.querySort(queryWrapper, orderMode);
         queryWrapper.last(String.format("LIMIT %d,%d", (currentPage - 1) * pageSize, pageSize));
         return queryWrapper;
     }
@@ -145,7 +142,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
             return null;
         }
         return list(new QueryWrapper<Comment>()
-                .eq("object_type", CommentObjectType.POST.getValue())
+                .eq("object_type", CommentObj.POST)
                 .eq("object_id", postId));
     }
     @Override
@@ -157,7 +154,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     private void dfs(Long commentId, List<Comment> ans) {
         List<Comment> childComments = list(new QueryWrapper<Comment>()
                 .eq("object_id", commentId)
-                .eq("object_type", CommentObjectType.COMMENT.getValue()));
+                .eq("object_type", CommentObj.COMMENT));
         if (childComments == null) {
             return;
         }
@@ -180,7 +177,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     @Override
     public Long getPostIdByCommentId(Long commentId) {
         Comment comment = getById(commentId);
-        if (CommentObjectType.POST.getValue().equals(comment.getObjectType())) {
+        if (CommentObj.POST.equals(comment.getObjectType())) {
             return comment.getObjectId();
         }
         return getPostIdByCommentId(comment.getObjectId());

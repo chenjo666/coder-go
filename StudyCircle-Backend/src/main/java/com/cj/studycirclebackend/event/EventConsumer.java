@@ -1,6 +1,7 @@
 package com.cj.studycirclebackend.event;
 
 import com.alibaba.fastjson2.JSONObject;
+import com.cj.studycirclebackend.constants.NoticeTopic;
 import com.cj.studycirclebackend.enums.NoticeType;
 import com.cj.studycirclebackend.service.NoticeService;
 import com.cj.studycirclebackend.util.EmailUtil;
@@ -21,7 +22,7 @@ public class EventConsumer {
     @Resource
     private EmailUtil emailUtil;
 
-    @KafkaListener(topics = Topic.LIKE)
+    @KafkaListener(topics = NoticeTopic.LIKE)
     public void handleLikeTopic(ConsumerRecord record) {
         if (!checkRecord(record)) {
             return;
@@ -41,7 +42,7 @@ public class EventConsumer {
             noticeService.createLikeCommentNotice(commentId, userId);
         }
     }
-    @KafkaListener(topics = Topic.COMMENT)
+    @KafkaListener(topics = NoticeTopic.COMMENT)
     public void handleCommentEvent(ConsumerRecord record) {
         if (!checkRecord(record)) {
             return;
@@ -61,7 +62,7 @@ public class EventConsumer {
             noticeService.createReplyCommentNotice(commentId, userId);
         }
     }
-    @KafkaListener(topics = Topic.FAVORITE)
+    @KafkaListener(topics = NoticeTopic.FAVORITE)
     public void handleFavoriteEvent(ConsumerRecord record) {
         if (!checkRecord(record)) {
             return;
@@ -72,7 +73,7 @@ public class EventConsumer {
         Long userId =  favoritePostEvent.getUserId();
         noticeService.createFavoritePostNotice(postId, userId);
     }
-    @KafkaListener(topics = Topic.FOLLOW)
+    @KafkaListener(topics = NoticeTopic.FOLLOW)
     public void handlerFollowEvent(ConsumerRecord record) {
         if (!checkRecord(record)) {
             return;
@@ -88,7 +89,7 @@ public class EventConsumer {
      * 异步发送邮件，提高响应性能
      * @param record
      */
-    @KafkaListener(topics = Topic.MAIL)
+    @KafkaListener(topics = NoticeTopic.MAIL)
     public void handlerSendMailEvent(ConsumerRecord record) {
         if (!checkRecord(record)) {
             return;

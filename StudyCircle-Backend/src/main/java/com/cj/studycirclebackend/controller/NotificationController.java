@@ -6,37 +6,24 @@ import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/notifications")
-public class NoticeController {
+@RequestMapping("/notification")
+public class NotificationController {
 
     @Resource
     private NoticeService noticeService;
 
-    /**
-     * 删除全部通知
-     * @return
-     */
-    @DeleteMapping
+    // v1 - 删除全部通知
+    @DeleteMapping("/v1/notices")
     public Response deleteAllNotice() {
-        return Response.builder()
-                .code(noticeService.deleteAllNotice() ? 200 : -1)
-                .build();
+        return noticeService.deleteAllNotice();
     }
-    /**
-     * 删除单条通知
-     * @param noticeId
-     * @return
-     */
-    @DeleteMapping("/{noticeId}")
+    // v1 - 删除单条通知
+    @DeleteMapping("/v1/notices/{noticeId}")
     public Response deleteSingleNotice(@PathVariable Long noticeId) {
-        return Response.builder()
-                .code(noticeService.deleteNotice(noticeId) ? 200 : -1)
-                .build();
+        return noticeService.deleteNotice(noticeId);
     }
-    /**
-     * 获取通知
-     */
-    @GetMapping
+    // v1 - 查找通知列表
+    @GetMapping("/v1/notices")
     public Response getNotice(@RequestParam Integer page, @RequestParam Integer limit) {
         return noticeService.getNotice(page, limit);
     }

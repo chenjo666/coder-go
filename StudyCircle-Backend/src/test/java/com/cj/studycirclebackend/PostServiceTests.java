@@ -3,6 +3,7 @@ package com.cj.studycirclebackend;
 import com.cj.studycirclebackend.StudyCircleBackendApplication;
 import com.cj.studycirclebackend.enums.PostType;
 import com.cj.studycirclebackend.pojo.Post;
+import com.cj.studycirclebackend.service.CommentService;
 import com.cj.studycirclebackend.service.PostService;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
@@ -95,5 +96,15 @@ public class PostServiceTests {
 
         // 返回随机索引对应的句子
         return sentences[randomIndex].trim();
+    }
+    @Resource
+    private CommentService commentService;
+    @Test
+    public void addFieldReplyTotal() {
+        List<Post> list = postService.list();
+        for (Post post : list) {
+            post.setReplyTotal(commentService.getPostRepliesByPostId(post.getId()));
+        }
+        postService.updateBatchById(list);
     }
 }

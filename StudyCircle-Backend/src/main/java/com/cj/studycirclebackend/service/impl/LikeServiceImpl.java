@@ -1,6 +1,7 @@
 package com.cj.studycirclebackend.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cj.studycirclebackend.constants.NoticeTopic;
 import com.cj.studycirclebackend.event.*;
 import com.cj.studycirclebackend.service.LikeService;
 import com.cj.studycirclebackend.dao.LikeMapper;
@@ -24,7 +25,7 @@ public class LikeServiceImpl extends ServiceImpl<LikeMapper, Like> implements Li
         redisTemplate.opsForZSet().add(key, userId, System.currentTimeMillis());
 
         // 点赞事件
-        Event event = new LikePostEvent(Topic.LIKE, NoticeType.LIKE_POST.getValue(), postId, userId);
+        Event event = new LikePostEvent(NoticeTopic.LIKE, NoticeType.LIKE_POST.getValue(), postId, userId);
         eventProducer.createEvent(event);
     }
 
@@ -34,7 +35,7 @@ public class LikeServiceImpl extends ServiceImpl<LikeMapper, Like> implements Li
         redisTemplate.opsForZSet().add(key, userId, System.currentTimeMillis());
 
         // 点赞事件
-        Event event = new LikeCommentEvent(Topic.LIKE, NoticeType.LIKE_COMMENT.getValue(), commentId, userId);
+        Event event = new LikeCommentEvent(NoticeTopic.LIKE, NoticeType.LIKE_COMMENT.getValue(), commentId, userId);
         eventProducer.createEvent(event);
     }
 

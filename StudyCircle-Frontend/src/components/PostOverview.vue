@@ -122,7 +122,7 @@ const clickPostDetailEvent = (postId) => {
 /******************************************************* 数据请求区 *******************************************************/
 // （1）请求全部帖子
 const getPostListRequest = () => {
-    return axios.get("/posts/v2", {
+    return axios.get("/discussion/v2/posts", {
         params: {
             'postType': postType.value,
             'orderMode': orderMode.value,
@@ -150,7 +150,7 @@ const getPostListRequest = () => {
 }
 //  (2) 请求提示词
 const getSuggestionRequest = (queryString: string, cb: (arg: any) => void) => {
-    axios.get('/posts/v1/suggestions/', { params: {queryString}})
+    axios.get('/discussion/v1/posts/suggestions/', { params: {queryString}})
     .then(res => {
         if (res.status === 200) {
             return null

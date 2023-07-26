@@ -10,19 +10,33 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+
 @Aspect
 @Component
 @Order(2)
 public class ArgsValidationAspect {
     private static final Logger logger = LoggerFactory.getLogger(ArgsValidationAspect.class);
     @Around("execution(* com.cj.studycirclebackend.controller.*.*(..))  " +
-            "&& !execution(* com.cj.studycirclebackend.controller.PostController.searchPosts(..))" +
-            "&& !execution(* com.cj.studycirclebackend.controller.PostController.getPosts(..))")
+            "&& !execution(* com.cj.studycirclebackend.controller.DiscussionController.searchPostsByMysql(..))" +
+            "&& !execution(* com.cj.studycirclebackend.controller.DiscussionController.searchPostsByElasticsearch(..))")
     public Object validateParameters(ProceedingJoinPoint joinPoint) throws Throwable {
         Object[] args = joinPoint.getArgs();
         // 验证参数
         for (Object arg : args) {
             logger.info("{}", arg);
+            if (arg instanceof Integer) {
+                logger.info("Integer args: {}", arg);
+            }
+            if (arg instanceof Long) {
+                logger.info("Long args: {}", arg);
+            }
+            if (arg instanceof String) {
+                logger.info("String args: {}", arg);
+            }
+            if (arg instanceof Map) {
+                logger.info("Map args: {}", arg);
+            }
             if (arg == null || (arg instanceof String && StringUtils.isBlank((CharSequence) arg))) {
                 return Response.badRequest();
             }

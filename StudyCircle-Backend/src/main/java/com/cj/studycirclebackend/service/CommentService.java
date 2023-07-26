@@ -32,7 +32,7 @@ public interface CommentService extends IService<Comment> {
      */
     Long getPostIdByCommentId(Long commentId);
 
-    public CommentVO getCommentVO(Comment comment);
+    CommentVO getCommentVO(Comment comment);
 
     /**
      * 评论的点赞业务

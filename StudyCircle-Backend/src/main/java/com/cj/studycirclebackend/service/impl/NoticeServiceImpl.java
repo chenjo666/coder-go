@@ -35,20 +35,18 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
     private CommentService commentService;
 
     @Override
-    public boolean deleteAllNotice() {
+    public Response deleteAllNotice() {
         if (userUtil.getUser() == null) {
-            return false;
+            return Response.badRequest();
         }
-        Long userId = userUtil.getUser().getId();
-        return remove(new QueryWrapper<Notice>().eq("user_to_id", userId));
+        remove(new QueryWrapper<Notice>().eq("user_to_id", userUtil.getUser().getId()));
+        return Response.ok();
     }
 
     @Override
-    public boolean deleteNotice(Long noticeId) {
-        if (noticeId == null) {
-            return false;
-        }
-        return removeById(noticeId);
+    public Response deleteNotice(Long noticeId) {
+        removeById(noticeId);
+        return Response.ok();
     }
 
     @Override
@@ -66,7 +64,7 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
     @Override
     @Transactional
     public Response getNotice(Integer currentPage, Integer pageSize) {
-        if (currentPage == null || pageSize == null || userUtil.getUser() == null) {
+        if (userUtil.getUser() == null) {
             return Response.badRequest();
         }
         Map<String, Object> data = new HashMap<>();
@@ -79,7 +77,7 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
         }
         List<NoticeVO> noticeVOList = new ArrayList<>();
         for (Notice notice : notices) {
-            noticeVOList.add(convertToNoticeVO(notice));
+            noticeVOList.add(getNoticeVO(notice));
             if (notice.getIsRead() == 0) {
                 notice.setIsRead(1);
             }
@@ -100,7 +98,7 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
     }
 
     @Override
-    public NoticeVO convertToNoticeVO(Notice notice) {
+    public NoticeVO getNoticeVO(Notice notice) {
         NoticeVO noticeVO = new NoticeVO();
         noticeVO.setNoticeId(notice.getId());
         noticeVO.setNoticeTime(DataUtil.formatDateTime(notice.getNoticeTime()));

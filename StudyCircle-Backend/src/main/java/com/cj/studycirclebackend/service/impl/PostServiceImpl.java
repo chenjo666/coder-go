@@ -3,8 +3,8 @@ package com.cj.studycirclebackend.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cj.studycirclebackend.constants.CommentSort;
 import com.cj.studycirclebackend.constants.PostSort;
-import com.cj.studycirclebackend.enums.CommentOrderMode;
 import com.cj.studycirclebackend.enums.PostType;
 import com.cj.studycirclebackend.service.*;
 import com.cj.studycirclebackend.util.RedisUtil;
@@ -24,7 +24,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.client.elc.NativeQueryBuilder;
@@ -73,7 +72,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         }
         PostDetailVO postDetailVO = getPostDetailVO(post);
 
-        List<CommentVO> commentVOs = commentService.getCommentVOs(postId, CommentOrderMode.NORMAL.getValue(), currentPage, pageSize);
+        List<CommentVO> commentVOs = commentService.getCommentVOs(postId, CommentSort.DEFAULT, currentPage, pageSize);
 
         postDetailVO.setPostReplies(commentVOs.size());  // 外层评论数量
         postDetailVO.setCommentReplies(Math.toIntExact(commentService.getPostRepliesByPostId(postId) - commentVOs.size()));         // 内层评论数量
@@ -137,7 +136,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
                 .stream()
                 .map(this::getPostPersonVO)
                 .collect(Collectors.toList());
-        return Response.builder().code(200).data(postPersonalVOList).build();
+        return Response.ok(postPersonalVOList);
     }
     @Override
     public Response getPostFavorites(Long userId) {
@@ -180,6 +179,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         if (StringUtils.isBlank(type) || StringUtils.isBlank(order) || page == null || limit == null) {
             return Response.badRequest();
         }
+        long time = System.currentTimeMillis();
         Map<String, Object> data = new HashMap<>();
         List<PostOverviewVO> postOverviewVOs = new ArrayList<>();
         // 搜索条件
@@ -205,6 +205,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
             // 4. 载入容器
             postOverviewVOs.add(getPostOverviewVO(post));
         }
+//        logger.info("es 搜索高亮 + 转换耗时: {}", System.currentTimeMillis() - time);
         // 5. 载入结果
         data.put("posts", postOverviewVOs);
         return Response.ok(data);
@@ -221,7 +222,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         }
 
         // 帖子搜索关键字
-        if (key != null && !StringUtils.isBlank(key)) {
+        if (!StringUtils.isBlank(key)) {
             // (1) 构建查询内容
             builder.withQuery(q -> q
                     .multiMatch(m -> m
@@ -333,6 +334,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     // 转换 PostOverviewVO 对象
     @Override
     public PostOverviewVO getPostOverviewVO(Post post) {
+        long time = System.currentTimeMillis();
         PostOverviewVO postOverviewVO = new PostOverviewVO();
         // 帖子作者
         User author = userService.getById(post.getUserId());
@@ -345,12 +347,10 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         postOverviewVO.setPostTime(DataUtil.formatDateTime(post.getPublishTime()));
         postOverviewVO.setGem(post.getIsGem() == 1);
         postOverviewVO.setTop(post.getIsTop() == 1);
+        postOverviewVO.setPostReplies(post.getReplyTotal());
         // 点赞数量
         Long count = likeService.getPostLikeTotal(post.getId());
         postOverviewVO.setPostLikes(count);
-        // 评论
-        long postReplies = commentService.getPostRepliesByPostId(post.getId());
-        postOverviewVO.setPostReplies(postReplies);
         // 观看人数
         String key = RedisUtil.getPostViewKey(post.getId());
         postOverviewVO.setPostViews(redisTemplate.opsForHyperLogLog().size(key));
@@ -394,6 +394,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     public PostPersonalVO getPostPersonVO(Post post) {
         PostPersonalVO postPersonalVO = new PostPersonalVO();
         postPersonalVO.setPostId(post.getId());
+        postPersonalVO.setPostTitle(post.getTitle());
         postPersonalVO.setPostTime(DataUtil.formatDateTime(post.getPublishTime()));
         // 访问量
         String key = RedisUtil.getPostViewKey(post.getId());

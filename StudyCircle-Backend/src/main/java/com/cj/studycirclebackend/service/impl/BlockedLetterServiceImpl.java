@@ -3,6 +3,7 @@ package com.cj.studycirclebackend.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cj.studycirclebackend.dao.BlockedLetterMapper;
+import com.cj.studycirclebackend.dto.Response;
 import com.cj.studycirclebackend.pojo.BlockedLetter;
 import com.cj.studycirclebackend.service.BlockedLetterService;
 import com.cj.studycirclebackend.util.UserUtil;
@@ -15,24 +16,20 @@ public class BlockedLetterServiceImpl extends ServiceImpl<BlockedLetterMapper, B
     @Resource
     private UserUtil userUtil;
     @Override
-    public boolean createBlockedLetter(Long blockedUserId) {
-        if (blockedUserId == null) {
-            return false;
-        }
+    public Response createBlockedLetter(Long blockedUserId) {
         BlockedLetter blockedLetter = new BlockedLetter();
         blockedLetter.setUserId(userUtil.getUser().getId());
         blockedLetter.setBlockedUserId(blockedUserId);
-        return save(blockedLetter);
+        save(blockedLetter);
+        return Response.ok();
     }
 
 
     @Override
-    public boolean deleteBlockedLetter(Long blockedUserId) {
-        if (blockedUserId == null) {
-            return false;
-        }
-        return remove(new QueryWrapper<BlockedLetter>()
+    public Response deleteBlockedLetter(Long blockedUserId) {
+        remove(new QueryWrapper<BlockedLetter>()
                 .eq("user_id", userUtil.getUser().getId())
                 .eq("blocked_user_id", blockedUserId));
+        return Response.ok();
     }
 }

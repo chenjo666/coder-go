@@ -1,6 +1,6 @@
-package com.cj.studycirclebackend.event;
+package com.cj.studycirclebackend.constants;
 
-public interface Topic {
+public interface NoticeTopic {
     String MAIL = "mail";
     String LIKE = "like";
     String FOLLOW = "follow";

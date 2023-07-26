@@ -22,6 +22,9 @@ const errorMsg = (msg) => {
 const commentContent = ref('')
 const emit = defineEmits(['commentResult'])
 const object = defineProps({
+  postId: {
+    type: String
+  },
   objectId: {
     type: String
   },
@@ -40,7 +43,7 @@ const object = defineProps({
 const clickSendCommentEvent = () => {
   console.log('send comment:' + object.objectId + ", " + object.objectType)
   console.log('commentEditor: ' + object.parentIndex + ", " + object.childIndex)
-  addCommentRequest(object.objectId, object.objectType, commentContent.value)
+  addCommentRequest(object.postId, object.objectId, object.objectType, commentContent.value)
   .then(res => {
     if (res != null) {
       commentContent.value = ''
@@ -53,8 +56,8 @@ const clickSendCommentEvent = () => {
 }
 
 // 发送评论请求
-const addCommentRequest = (objectId : string | undefined, objectType : string | undefined, content: string) => {
-  return axios.post("/comments", {"objectId" : objectId, "objectType" : objectType, "content" : content})
+const addCommentRequest = (postId : string | undefined, objectId : string | undefined, objectType : string | undefined, content: string) => {
+  return axios.post(`/discussion/v1/posts/${postId}/comments`, {"objectId" : objectId, "objectType" : objectType, "content" : content})
     .then(response => {
       if (response.status !== 200) {
         errorMsg('网络请求出错!')

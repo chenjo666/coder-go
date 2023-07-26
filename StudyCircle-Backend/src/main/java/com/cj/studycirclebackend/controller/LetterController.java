@@ -53,10 +53,7 @@ public class LetterController {
      */
     @PostMapping("/blocks/{blockedUserId}")
     public Response createBlockedLetter(@PathVariable("blockedUserId") Long blockedUserId) {
-        return Response.builder()
-                .code(blockedLetterService.createBlockedLetter(blockedUserId) ?
-                        ResponseCode.SUCCESS.getValue() : ResponseCode.FAILURE.getValue())
-                .build();
+        return blockedLetterService.createBlockedLetter(blockedUserId);
     }
 
     /**
@@ -66,10 +63,7 @@ public class LetterController {
      */
     @DeleteMapping("/blocks/{blockedUserId}")
     public Response deleteBlockedLetter(@PathVariable("blockedUserId") Long blockedUserId) {
-        return Response.builder()
-                .code(blockedLetterService.deleteBlockedLetter(blockedUserId) ?
-                        ResponseCode.SUCCESS.getValue() : ResponseCode.FAILURE.getValue())
-                .build();
+        return blockedLetterService.deleteBlockedLetter(blockedUserId);
     }
 
 }

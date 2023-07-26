@@ -134,12 +134,14 @@ const postDetailVO = ref({
         },
     ]
 })
+const COMMENT_SORT = ['default', 'new']
+const COMMENT_OBJ = ['post', 'comment']
+const PAGE_SIZE = 10
+
+const activeIndex = ref('0')
 const currentPage = ref(1)
-const pageSize = ref(10)
+
 const postId = ref('0')
-const activeIndex = ref('1')
-const objectType = ['post', 'comment']
-const orderModeTable = ['', 'normal', 'newest']
 const repliesVisible = reactive([])
 const editorVisible = reactive({})
 function toggleCommentEditor(index, childIndex) {
@@ -290,10 +292,10 @@ const clickLikeEvent = (objectId, objectType, parentIndex, childIndex) => {
 const receiveCommentEvent = (idx1, idx2) => {
     console.log("idxs: ", idx1, idx2)
     if (idx1 === -1 && idx2 === -1) {
-        getCommentListRequest(postDetailVO.value.postId, "newest", 1, pageSize.value)
+        getCommentListRequest(postDetailVO.value.postId, "newest", 1, PAGE_SIZE)
             .then(res => {
                 if (res != null) {
-                    activeIndex.value = '2'
+                    activeIndex.value = '1'
                     postDetailVO.value.parentCommentListVO = res
                 }
             }).catch(err => {
@@ -316,8 +318,8 @@ const receiveCommentEvent = (idx1, idx2) => {
 // （5）点击评论按钮事件
 //  业务规则：仅改变评论区对应页码的评论
 const clickCommmentPageEvent = () => {
-    const orderMode = orderModeTable[activeIndex.value]
-    getCommentListRequest(postDetailVO.value.postId, orderMode, currentPage.value, pageSize.value)
+    const orderMode = COMMENT_SORT[activeIndex.value]
+    getCommentListRequest(postDetailVO.value.postId, orderMode, currentPage.value, PAGE_SIZE)
         .then(res => {
             if (res != null) {
                 postDetailVO.value.parentCommentListVO = res
@@ -330,7 +332,7 @@ const clickCommmentPageEvent = () => {
 //  仅更新评论区，页码回到第一页
 const clickOrderEvent = (ordermode: string) => {
     currentPage.value = 1
-    getCommentListRequest(postDetailVO.value.postId, ordermode, currentPage.value, pageSize.value)
+    getCommentListRequest(postDetailVO.value.postId, ordermode, currentPage.value, PAGE_SIZE)
         .then(res => {
             if (res !== null) {
                 postDetailVO.value.parentCommentListVO = res
@@ -343,7 +345,7 @@ const clickOrderEvent = (ordermode: string) => {
 /******************************************************* 请求区 *******************************************************/
 // （0）刷新界面请求：传入帖子 id，返回帖子全部信息（默认第一页）
 const getPostDetailRequest = (postId: string) => {
-    return axios.get(`/posts/${postId}`, { params: { "currentPage": currentPage.value, "pageSize": pageSize.value } })
+    return axios.get(`/discussion/v1/posts/${postId}`, { params: { "commentPage": currentPage.value, "commentLimit": PAGE_SIZE } })
         .then(response => {
             if (response.status !== 200) {
                 errorMsg('请求失败！')
@@ -404,7 +406,7 @@ const unfollowRequest = (userId: string) => {
 }
 // （3）添加收藏请求，参数为帖子 id
 const favoriteRequest = (postId: string) => {
-    return axios.post(`/posts/v1/${postId}/favorites`)
+    return axios.post(`/discussion/v1/posts/${postId}/favorites`)
         .then(response => {
             if (response.status !== 200) {
                 errorMsg('网络请求出错!')
@@ -425,7 +427,7 @@ const favoriteRequest = (postId: string) => {
 }
 //  (4) 取消收藏请求，参数为帖子 id
 const unfavoriteRequest = (postId: string) => {
-    return axios.delete(`/posts/v1/${postId}/favorites`)
+    return axios.delete(`/discussion/v1/posts/${postId}/favorites`)
         .then(response => {
             if (response.status !== 200) {
                 errorMsg('网络请求出错!')
@@ -446,7 +448,7 @@ const unfavoriteRequest = (postId: string) => {
 }
 // （7）查询帖子的评论请求：传入【帖子id、页码、每页大小】，返回此页的评论对象数组 CommentVO[]
 const getCommentListRequest = (postId: string, orderMode: string, currentPage: number, pageSize: number) => {
-    return axios.get(`/comments/posts/${postId}`, { params: { 'orderMode': orderMode, 'currentPage': currentPage, 'pageSize': pageSize } })
+    return axios.get(`/discussion/v1/posts/${postId}/comments`, { params: { 'orderMode': orderMode, 'currentPage': currentPage, 'pageSize': pageSize } })
         .then(response => {
             if (response.status !== 200) {
                 errorMsg('网络请求出错!')
@@ -467,7 +469,7 @@ const getCommentListRequest = (postId: string, orderMode: string, currentPage: n
 }
 //  (8) 查询评论的评论请求：传入【评论id】，返回【CommentVO[]】
 const getCommentListByCommentRequest = (commentId: string) => {
-    return axios.get(`/comments/comments/${commentId}`)
+    return axios.get(`/discussion/v1/posts/comments/${commentId}/comments`)
         .then(response => {
             if (response.status !== 200) {
                 errorMsg('网络请求出错!')
@@ -491,8 +493,8 @@ const setCommentContentRequest = (commentId: string, newContent: string) => {
 
 }
 // （10）删除评论请求：传入【评论id】，返回状态码确认是否成功
-const delCommentRequest = (commentId: string) => {
-    return axios.delete(`/comments/${commentId}`)
+const delCommentRequest = (postId: string, commentId: string) => {
+    return axios.delete(`/discussion/v1/posts/${postId}/comments/${commentId}`)
         .then(response => {
             if (response.status !== 200) {
                 errorMsg('网络请求出错!')
@@ -511,12 +513,9 @@ const delCommentRequest = (commentId: string) => {
             return false
         });
 }
-
-
-
 // (v1.1) 点赞帖子请求：
 const likePostRequest = (postId) => {
-    return axios.post(`/posts/v1/${postId}/likes`)
+    return axios.post(`/discussion/v1/posts/${postId}/likes`)
         .then(response => {
             if (response.status !== 200) {
                 errorMsg('网络请求出错!')
@@ -537,7 +536,7 @@ const likePostRequest = (postId) => {
 }
 // (v1.2) 取消点赞帖子请求：
 const dislikePostRequest = (postId) => {
-    return axios.delete(`/posts/v1/${postId}/likes`)
+    return axios.delete(`/discussion/v1/posts/${postId}/likes`)
         .then(response => {
             if (response.status !== 200) {
                 errorMsg('网络请求出错!')
@@ -558,7 +557,7 @@ const dislikePostRequest = (postId) => {
 }
 // (v1.3) 点赞评论请求：
 const likeCommentRequest = (commentId) => {
-    return axios.post(`/comments/v1/${commentId}/likes`)
+    return axios.post(`/discussion/v1/posts/comments/${commentId}/likes`)
         .then(response => {
             if (response.status !== 200) {
                 errorMsg('网络请求出错!')
@@ -579,7 +578,7 @@ const likeCommentRequest = (commentId) => {
 }
 // (v1.4) 取消点赞评论请求：
 const dislikeCommentRequest = (commentId) => {
-    return axios.delete(`/comments/v1/${commentId}/likes`)
+    return axios.delete(`/discussion/v1/posts/comments/${commentId}/likes`)
         .then(response => {
             if (response.status !== 200) {
                 errorMsg('网络请求出错!')
@@ -656,7 +655,7 @@ const dislikeCommentRequest = (commentId) => {
                             <div class="post-operations-container">
 
                                 <div class="post-operations-item"><el-text class="post-likes" @click="
-                                    clickLikeEvent(postDetailVO.postId, objectType[0], -1, -1)"
+                                    clickLikeEvent(postDetailVO.postId, COMMENT_OBJ[0], -1, -1)"
                                         :style="{ color: (postDetailVO.like ? 'blue' : 'gray'), fontSize: '20px' }"><el-icon
                                             size="20">
                                             <Pointer />
@@ -676,7 +675,10 @@ const dislikeCommentRequest = (commentId) => {
 
                             <!-- 输入框 -->
                             <!-- <el-divider></el-divider> -->
-                            <CommentEditor :objectId="postDetailVO.postId" :objectType="'post'" :parentIndex="-1" :childIndex="-1"
+                            <CommentEditor :postId="postDetailVO.postId"  
+                                :objectId="postDetailVO.postId" 
+                                :objectType="'post'" 
+                                :parentIndex="-1" :childIndex="-1"
                                 @commentResult="receiveCommentEvent" />
 
                             <!-- 评论区 -->
@@ -686,8 +688,8 @@ const dislikeCommentRequest = (commentId) => {
                                     <el-menu :default-active="activeIndex" class="el-menu-demo" mode="horizontal"
                                         :ellipsis="false">
                                         <div class="flex-grow"></div>
-                                        <el-menu-item index="1" @click="clickOrderEvent('normal')">综合</el-menu-item>
-                                        <el-menu-item index="2" @click="clickOrderEvent('newest')">最新</el-menu-item>
+                                        <el-menu-item index="0" @click="clickOrderEvent(COMMENT_SORT[0])">综合</el-menu-item>
+                                        <el-menu-item index="1" @click="clickOrderEvent(COMMENT_SORT[1])">最新</el-menu-item>
                                     </el-menu>
                                 </div>
                                 <!-- 每条评论 -->
@@ -704,7 +706,7 @@ const dislikeCommentRequest = (commentId) => {
                                     </div>
                                     <div class="comment-operation">
                                         <el-text class="comment-likes"
-                                            @click="clickLikeEvent(comment.commentId, objectType[1], index, -1)"
+                                            @click="clickLikeEvent(comment.commentId, COMMENT_OBJ[1], index, -1)"
                                             :style="{ color: (comment.like ? 'blue' : 'gray') }"><el-icon>
                                                 <Pointer />
                                             </el-icon>{{ comment.commentLikes == 0 ? '赞' : comment.commentLikes }}
@@ -723,7 +725,8 @@ const dislikeCommentRequest = (commentId) => {
                                     </div>
                                     <!-- CommentEditor 组件 -->
                                     <div :style="{ display: editorVisible[`reply_${index}_-1`] ? 'block' : 'none' }">
-                                        <CommentEditor :objectId="comment.commentId" :objectType="'comment'"
+                                        <CommentEditor :postId="postDetailVO.postId"  
+                                            :objectId="comment.commentId" :objectType="'comment'"
                                             :parentIndex="index" :childIndex="-1" @commentResult="receiveCommentEvent" />
                                     </div>
                                     <!-- 回复列表 -->
@@ -741,7 +744,7 @@ const dislikeCommentRequest = (commentId) => {
                                             </div>
                                             <div class="comment-operation">
                                                 <el-text class="comment-likes"
-                                                    @click="clickLikeEvent(childComment.commentId, objectType[1], index, childIndex)"
+                                                    @click="clickLikeEvent(childComment.commentId, COMMENT_OBJ[1], index, childIndex)"
                                                     :style="{ color: (childComment.like ? 'blue' : 'gray') }">
                                                     <el-icon>
                                                         <Pointer />
@@ -757,8 +760,11 @@ const dislikeCommentRequest = (commentId) => {
                                             <!-- CommentEditor 组件 -->
                                             <div
                                                 :style="{ display: editorVisible[`reply_${index}_${childIndex}`] ? 'block' : 'none' }">
-                                                <CommentEditor :objectId="childComment.commentId" :objectType="'comment'"
-                                                    :parentIndex="index" :childIndex="childIndex"
+                                                <CommentEditor :postId="postDetailVO.postId" 
+                                                    :objectId="childComment.commentId" 
+                                                    :objectType="'comment'"
+                                                    :parentIndex="index" 
+                                                    :childIndex="childIndex"
                                                     @commentResult="receiveCommentEvent" />
                                             </div>
                                         </div>
@@ -772,7 +778,7 @@ const dislikeCommentRequest = (commentId) => {
                                 <div>
                                     <el-pagination @click="clickCommmentPageEvent()" v-model:current-page="currentPage"
                                         background layout="prev, pager, next" :total="postDetailVO.postReplies"
-                                        :default-page-size="pageSize" />
+                                        :default-page-size="PAGE_SIZE" />
                                 </div>
                             </div>
                         </div>

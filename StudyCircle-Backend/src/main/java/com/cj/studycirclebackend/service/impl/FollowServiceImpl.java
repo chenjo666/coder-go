@@ -1,7 +1,7 @@
 package com.cj.studycirclebackend.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.cj.studycirclebackend.event.Topic;
+import com.cj.studycirclebackend.constants.NoticeTopic;
 import com.cj.studycirclebackend.service.FollowService;
 import com.cj.studycirclebackend.dao.FollowMapper;
 import com.cj.studycirclebackend.enums.NoticeType;
@@ -34,7 +34,7 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
         redisTemplate.opsForZSet().add(followerKey, userFromId, System.currentTimeMillis());
 
         // 关注事件
-        Event followEvent = new FollowUserEvent(Topic.FOLLOW, NoticeType.FOLLOW_USER.getValue(), userFromId, userToId);
+        Event followEvent = new FollowUserEvent(NoticeTopic.FOLLOW, NoticeType.FOLLOW_USER.getValue(), userFromId, userToId);
         eventProducer.createEvent(followEvent);
     }
 

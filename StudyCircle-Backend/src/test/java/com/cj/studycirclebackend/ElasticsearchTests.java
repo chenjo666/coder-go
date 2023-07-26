@@ -20,6 +20,7 @@ import org.springframework.data.elasticsearch.core.query.HighlightQuery;
 import org.springframework.data.elasticsearch.core.query.Query;
 import org.springframework.data.elasticsearch.core.query.highlight.Highlight;
 import org.springframework.data.elasticsearch.core.query.highlight.HighlightField;
+import org.springframework.test.context.TestPropertySource;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -88,6 +89,17 @@ private PostService postService;
 
         postService.saveBatch(posts);
         operations.save(posts);
+    }
+
+    @Test
+    public void deleteIndex() {
+        operations.indexOps(Post.class).delete();
+    }
+
+    @Test
+    public void copyDataFromMysql() {
+        List<Post> list = postService.list();
+        operations.save(list);
     }
 
     @Test
