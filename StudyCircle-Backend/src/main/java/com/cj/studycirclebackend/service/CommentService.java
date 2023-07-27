@@ -22,11 +22,6 @@ public interface CommentService extends IService<Comment> {
     List<Comment> getParentCommentsByPost(Long postId);
     List<Comment> getChildCommentsByComment(Long commentId);
 
-
-    /**
-     * 得到帖子的评论数
-     */
-    Long getPostRepliesByPostId(Long postId);
     /**
      * 得到评论所在的帖子
      */

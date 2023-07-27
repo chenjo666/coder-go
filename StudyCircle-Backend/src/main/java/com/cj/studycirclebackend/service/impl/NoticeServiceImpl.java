@@ -17,6 +17,8 @@ import com.cj.studycirclebackend.service.UserService;
 import com.cj.studycirclebackend.util.DataUtil;
 import com.cj.studycirclebackend.util.UserUtil;
 import jakarta.annotation.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,7 @@ import java.util.*;
 
 @Service
 public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> implements NoticeService {
+    private static final Logger logger = LoggerFactory.getLogger(NoticeServiceImpl.class);
 
     @Resource
     private UserUtil userUtil;
@@ -37,16 +40,16 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
     @Override
     public Response deleteAllNotice() {
         if (userUtil.getUser() == null) {
-            return Response.badRequest();
+            return Response.unauthorized();
         }
-        remove(new QueryWrapper<Notice>().eq("user_to_id", userUtil.getUser().getId()));
-        return Response.ok();
+        boolean res = remove(new QueryWrapper<Notice>().eq("user_to_id", userUtil.getUser().getId()));
+        return res ? Response.ok() : Response.notContent();
     }
 
     @Override
     public Response deleteNotice(Long noticeId) {
-        removeById(noticeId);
-        return Response.ok();
+        boolean res = removeById(noticeId);
+        return res ? Response.ok() : Response.notContent();
     }
 
     @Override
@@ -65,8 +68,9 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
     @Transactional
     public Response getNotice(Integer currentPage, Integer pageSize) {
         if (userUtil.getUser() == null) {
-            return Response.badRequest();
+            return Response.unauthorized();
         }
+        logger.info("user: {}", userUtil.getUser());
         Map<String, Object> data = new HashMap<>();
         List<Notice> notices = list(new QueryWrapper<Notice>()
                 .eq("user_to_id", userUtil.getUser().getId())

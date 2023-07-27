@@ -42,8 +42,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
         // 2. 转换为对象
         LetterRequest request = JSONObject.parseObject(payload, LetterRequest.class);
         logger.info("【session】 {}, send letter: {}", session, request);
-        Letter letter = letterService.saveLetter(request);
-        LetterOverviewVO letterOverviewVO = letterService.getLetterOverviewVO(letter);
+        Letter letter = letterService.saveLetterRequest(request);
+        LetterOverviewVO letterOverviewVO = letterService.getLetterOverviewVO(letter.getUserFromId(), letter.getUserToId());
         // 3. 检查目标用户是否存在
         WebSocketSession webSocketSession = clients.get(request.getUserToId());
         // 4.0 不存在则不进行后续操作

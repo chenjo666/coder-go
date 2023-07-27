@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
 
 @Aspect
@@ -24,18 +25,30 @@ public class ArgsValidationAspect {
         Object[] args = joinPoint.getArgs();
         // 验证参数
         for (Object arg : args) {
-            logger.info("{}", arg);
+            // Integer: 要求不能为负数
             if (arg instanceof Integer) {
                 logger.info("Integer args: {}", arg);
+                if ((Integer) arg < 0){
+                    return Response.badRequest();
+                }
             }
             if (arg instanceof Long) {
                 logger.info("Long args: {}", arg);
+                if ((Long) arg < 0) {
+                    return Response.badRequest();
+                }
             }
             if (arg instanceof String) {
                 logger.info("String args: {}", arg);
+                if (StringUtils.isBlank((CharSequence) arg)){
+                    return Response.badRequest();
+                }
             }
             if (arg instanceof Map) {
                 logger.info("Map args: {}", arg);
+            }
+            if (arg instanceof List) {
+                logger.info("list args: {}", arg);
             }
             if (arg == null || (arg instanceof String && StringUtils.isBlank((CharSequence) arg))) {
                 return Response.badRequest();

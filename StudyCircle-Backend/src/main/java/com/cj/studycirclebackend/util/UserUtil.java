@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class UserUtil {
-    private ThreadLocal<User> users = new ThreadLocal<User>();
+    private final ThreadLocal<User> users = new ThreadLocal<>();
 
     public void setUser(User user) {
         users.set(user);

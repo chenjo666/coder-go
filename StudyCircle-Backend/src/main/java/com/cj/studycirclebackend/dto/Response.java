@@ -16,6 +16,9 @@ public class Response {
     public static Response ok(Object data) {
         return Response.builder().code(200).msg("OK").data(data).build();
     }
+    public static Response created() {
+        return Response.builder().code(201).msg("Created").build();
+    }
 
     public static Response notContent() {
         return Response.builder().code(204).msg("Not Content").build();
@@ -24,9 +27,15 @@ public class Response {
     public static Response badRequest() {
         return Response.builder().code(400).msg("Bad Request").build();
     }
+    public static Response unauthorized() {
+        return Response.builder().code(401).msg("Unauthorized").build();
+    }
 
     public static Response notFound() {
         return Response.builder().code(404).msg("Not Found").build();
+    }
+    public static Response internalServerError() {
+        return Response.builder().code(500).msg(" Internal Server Error").build();
     }
 
     /**
@@ -44,6 +53,7 @@ public class Response {
     public static Response invalidOperation() {
         return Response.builder().code(400).msg("请先登录！").build();
     }
+
 
 
     /**

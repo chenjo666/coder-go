@@ -1,6 +1,7 @@
 package com.cj.studycirclebackend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cj.studycirclebackend.service.FollowService;
 import com.cj.studycirclebackend.service.LetterService;
@@ -17,6 +18,8 @@ import com.cj.studycirclebackend.util.UserUtil;
 import com.cj.studycirclebackend.vo.LetterDetailVO;
 import com.cj.studycirclebackend.vo.LetterOverviewVO;
 import jakarta.annotation.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,73 +35,32 @@ public class LetterServiceImpl extends ServiceImpl<LetterMapper, Letter> impleme
     private FollowService followService;
     @Resource
     private BlockedLetterService blockedLetterService;
-
+    private static final Logger logger = LoggerFactory.getLogger(LetterServiceImpl.class);
 
     @Override
     @Transactional
     public Response getLetterList(String token) {
+        if (userUtil.getUser() == null) {
+            return Response.unauthorized();
+        }
         Long userId = userUtil.getUser().getId();
-        // 1. 查询出全部的私信列表
-        List<Letter> letters = list(new QueryWrapper<Letter>()
-                .select("user_from_id")
-                .eq("user_to_id", userId)
-                .groupBy("user_from_id"));
-        // 2. 查询未读数量，最新消息
-        List<LetterOverviewVO> letterOverviewVOList = new ArrayList<>();
-        for (Letter letter : letters) {
-            LetterOverviewVO letterOverviewVO = new LetterOverviewVO();
-            Long userFromId = letter.getUserFromId();
-            // 查询未读数量
-            Long count = count(new QueryWrapper<Letter>()
-                    .eq("user_from_id", userFromId)
-                    .eq("user_to_id", userId)
-                    .eq("is_read", 0));
-            letterOverviewVO.setUnReadCount(Math.toIntExact(count));
-            // 查询头像、姓名
-            User user = userService.getById(userFromId);
-            letterOverviewVO.setUserId(userFromId.toString());
-            letterOverviewVO.setUserName(user.getUsername());
-            letterOverviewVO.setUserAvatar(user.getAvatar());
-            // 查询最新消息、最新内容
-            List<Letter> list = list(new QueryWrapper<Letter>()
-                    .eq("user_from_id", userFromId)
-                    .eq("user_to_id", userId)
-                    .or()
-                    .eq("user_to_id", userFromId)
-                    .eq("user_from_id", userId)
-                    .orderByDesc("send_time"));
-            letterOverviewVO.setNewContent(list.get(0).getContent());
-            letterOverviewVO.setNewDate(DataUtil.formatDateTime(list.get(0).getSendTime()));
-            // 查询关注、粉丝、是否屏蔽
-            boolean isStar = followService.isFollowedByUser(userId, userFromId);
-            boolean isFan = followService.isFollowedByUser(userFromId, userId);
-            letterOverviewVO.setFan(isFan);
-            letterOverviewVO.setStar(isStar);
-            BlockedLetter one = blockedLetterService.getOne(new QueryWrapper<BlockedLetter>()
-                    .eq("user_id", userId)
-                    .eq("blocked_user_id", user.getId()));
-            letterOverviewVO.setBlock(one != null);
-
-            letterOverviewVOList.add(letterOverviewVO);
+        // 1. 查询出对话人
+        List<Long> toUserIds = getBaseMapper().getToUserIds(userId);
+        if (toUserIds == null) {
+            return Response.notContent();
         }
-        letterOverviewVOList = letterOverviewVOList.stream()
-                .sorted(Comparator.comparing(LetterOverviewVO::getNewDate).reversed()).toList();
+        // 2. 查询出对话记录
+        List<LetterOverviewVO> letterOverviewVOList = new ArrayList<>(toUserIds.size());
+        for (Long toUserId : toUserIds) {
+            letterOverviewVOList.add(getLetterOverviewVO(toUserId, userId));
+        }
         letterOverviewVOList.get(0).setUnReadCount(0);
-        // 3. 查询出详细的私信信息
-        List<LetterDetailVO> letterDetailVOList = new ArrayList<>();
-        List<Letter> list = list(new QueryWrapper<Letter>()
-                .eq("user_from_id", letterOverviewVOList.get(0).getUserId())
-                .eq("user_to_id", userId)
-                .or()
-                .eq("user_to_id", letterOverviewVOList.get(0).getUserId())
-                .eq("user_from_id", userId)
-                .orderByAsc("send_time"));
-        for (Letter letter : list) {
-            LetterDetailVO letterDetailVO = convertToLetterDetailVO(letter);
-            letterDetailVOList.add(letterDetailVO);
-            letter.setIsRead(1);
+        // 3. 查询出第一条详细的私信信息
+        List<LetterDetailVO> letterDetailVOList = getLetterDetails(userId, letterOverviewVOList.get(0).getUserId());
+        if (letterDetailVOList == null) {
+            return Response.notContent();
         }
-        updateBatchById(list);
+        // 4. 封装结果
         Map<String, Object> data = new HashMap<>();
         data.put("letterOverviewVOList", letterOverviewVOList);
         data.put("letterDetailVOList", letterDetailVOList);
@@ -106,102 +68,126 @@ public class LetterServiceImpl extends ServiceImpl<LetterMapper, Letter> impleme
     }
 
     @Override
-    @Transactional
     public Response getLetterDetails(Long userId) {
-        Long id = userUtil.getUser().getId();
-        List<LetterDetailVO> letterDetailVOList = new ArrayList<>();
-        List<Letter> list = list(new QueryWrapper<Letter>()
-                .eq("user_from_id", id)
-                .eq("user_to_id", userId)
-                .or()
-                .eq("user_to_id", id)
-                .eq("user_from_id", userId)
-                .orderByAsc("send_time"));
-        for (Letter letter : list) {
-            LetterDetailVO letterDetailVO = convertToLetterDetailVO(letter);
-            letterDetailVOList.add(letterDetailVO);
-            letter.setIsRead(1);
+        if (userUtil.getUser() == null) {
+            return Response.unauthorized();
         }
-        updateBatchById(list);
-        return Response.ok(letterDetailVOList);
+        List<LetterDetailVO> res = getLetterDetails(userUtil.getUser().getId(), userId);
+        return res != null ? Response.ok(res) : Response.notContent();
     }
 
     @Override
     public Response createLetter(Long userId, String content, Date sendTime) {
-        Long id = userUtil.getUser().getId();
-        Letter letter = new Letter();
-        letter.setContent(content);
-        letter.setUserFromId(id);
-        letter.setUserToId(userId);
-        letter.setSendTime(sendTime);
-        save(letter);
+        if (userUtil.getUser() == null) {
+            return Response.unauthorized();
+        }
+        Letter letter = Letter.builder()
+                .userFromId(userUtil.getUser().getId())
+                .userToId(userId)
+                .content(content)
+                .sendTime(sendTime)
+                .build();
+        boolean res = save(letter);
+        return res ? Response.created() : Response.internalServerError();
+    }
 
+    @Override
+    public Response deleteLetters(Long toUserId) {
+        if (userUtil.getUser() == null) {
+            return Response.unauthorized();
+        }
+        boolean delFrom = update(new UpdateWrapper<Letter>()
+                .set("is_deleted_from_user", 1)
+                .eq("user_from_id", userUtil.getUser().getId())
+                .eq("user_to_id", toUserId));
+        boolean delTo = update(new UpdateWrapper<Letter>()
+                .set("is_deleted_to_user", 1)
+                .eq("user_from_id", toUserId)
+                .eq("user_to_id", userUtil.getUser().getId()));
+        if (!delFrom && !delTo) {
+            return Response.notContent();
+        }
         return Response.ok();
     }
 
     @Override
-    public Response deleteLetters(Long userId) {
-        Long id = userUtil.getUser().getId();
-        remove(new QueryWrapper<Letter>()
-                .eq("user_from_id", userId)
-                .eq("user_to_id", id)
-                .or()
-                .eq("user_from_id", id)
-                .eq("user_to_id", userId));
-        return Response.ok();
+    public Letter saveLetterRequest(LetterRequest letterRequest) {
+        Letter letter = Letter.builder()
+                .userFromId(letterRequest.getUserFromId())
+                .userToId(letterRequest.getUserToId())
+                .content(letterRequest.getContent())
+                .sendTime(DataUtil.formatStringToDate(letterRequest.getTime()))
+                .build();
+        boolean res = save(letter);
+        return res ? letter : null;
     }
 
     @Override
-    public Letter saveLetter(LetterRequest letterRequest) {
-        Letter letter = new Letter();
-        letter.setContent(letterRequest.getContent());
-        letter.setUserFromId(letterRequest.getUserFromId());
-        letter.setUserToId(letterRequest.getUserToId());
-        letter.setSendTime(DataUtil.formatStringToDate(letterRequest.getTime()));
-        save(letter);
-        return letter;
-    }
-
-    @Override
-    public LetterOverviewVO getLetterOverviewVO(Letter letter) {
+    public LetterOverviewVO getLetterOverviewVO(Long fromUserId, Long toUserId) {
         LetterOverviewVO letterOverviewVO = new LetterOverviewVO();
-        Long userFromId = letter.getUserFromId();
-        Long userToId = letter.getUserToId();
         // 查询未读数量
-        Long count = count(new QueryWrapper<Letter>()
-                .eq("user_from_id", userFromId)
-                .eq("user_to_id", userToId)
+        long count = count(new QueryWrapper<Letter>()
+                .eq("user_from_id", fromUserId)
+                .eq("user_to_id", toUserId)
                 .eq("is_read", 0));
         letterOverviewVO.setUnReadCount(Math.toIntExact(count));
         // 查询头像、姓名
-        User user = userService.getById(userFromId);
-        letterOverviewVO.setUserId(userFromId.toString());
+        User user = userService.getById(fromUserId);
+        letterOverviewVO.setUserId(fromUserId);
         letterOverviewVO.setUserName(user.getUsername());
         letterOverviewVO.setUserAvatar(user.getAvatar());
         // 查询最新消息、最新内容
-        List<Letter> list = list(new QueryWrapper<Letter>()
-                .eq("user_from_id", userFromId)
-                .eq("user_to_id", userToId)
+        Letter newestLetter = getOne(new QueryWrapper<Letter>()
+                .eq("user_from_id", fromUserId)
+                .eq("user_to_id", toUserId)
+                .eq("is_deleted_from_user", 0)
                 .or()
-                .eq("user_to_id", userFromId)
-                .eq("user_from_id", userToId)
-                .orderByDesc("send_time"));
-        letterOverviewVO.setNewContent(list.get(0).getContent());
-        letterOverviewVO.setNewDate(DataUtil.formatDateTime(list.get(0).getSendTime()));
+                .eq("user_to_id", fromUserId)
+                .eq("user_from_id", toUserId)
+                .eq("is_deleted_to_user", 0)
+                .orderByDesc("send_time")
+                .last(String.format("LIMIT %d", 1)));
+        letterOverviewVO.setNewContent(newestLetter.getContent());
+        letterOverviewVO.setNewDate(DataUtil.formatDateTime(newestLetter.getSendTime()));
         // 查询关注、粉丝、是否屏蔽
-        boolean isStar = followService.isFollowedByUser(userToId, userFromId);
-        boolean isFan = followService.isFollowedByUser(userFromId, userToId);
+        boolean isStar = followService.isFollowedByUser(toUserId, fromUserId);
+        boolean isFan = followService.isFollowedByUser(fromUserId, toUserId);
         letterOverviewVO.setFan(isFan);
         letterOverviewVO.setStar(isStar);
         BlockedLetter one = blockedLetterService.getOne(new QueryWrapper<BlockedLetter>()
-                .eq("user_id", userToId)
+                .eq("user_id", toUserId)
                 .eq("blocked_user_id", user.getId()));
         letterOverviewVO.setBlock(one != null);
 
         return letterOverviewVO;
     }
 
-    public LetterDetailVO convertToLetterDetailVO(Letter letter) {
+    // 查询出某个私信全部会话记录，并更新为已读
+    @Override
+    @Transactional
+    public List<LetterDetailVO> getLetterDetails(Long fromUserId, Long toUserId) {
+        List<LetterDetailVO> letterDetailVOList = new ArrayList<>();
+        List<Letter> list = list(new QueryWrapper<Letter>()
+                .eq("is_deleted_from_user", 0)
+                .eq("user_from_id", fromUserId)
+                .eq("user_to_id", toUserId)
+                .or()
+                .eq("is_deleted_to_user", 0)
+                .eq("user_to_id", fromUserId)
+                .eq("user_from_id", toUserId)
+                .orderByAsc("send_time"));
+        if (list == null) {
+            return null;
+        }
+        for (Letter letter : list) {
+            letterDetailVOList.add(getLetterDetailVO(letter));
+            letter.setIsRead(1);
+        }
+        boolean res = updateBatchById(list);
+        return res ? letterDetailVOList : null;
+    }
+
+    public LetterDetailVO getLetterDetailVO(Letter letter) {
         Long id = userUtil.getUser().getId();
         LetterDetailVO letterDetailVO = new LetterDetailVO();
         letterDetailVO.setSelf(Objects.equals(letter.getUserFromId(), id));
@@ -209,4 +195,5 @@ public class LetterServiceImpl extends ServiceImpl<LetterMapper, Letter> impleme
         letterDetailVO.setContent(letter.getContent());
         return letterDetailVO;
     }
+
 }

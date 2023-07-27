@@ -18,8 +18,6 @@ public interface UserService extends IService<User> {
     UserVO getUserVO(User user);
 
 
-    Response followUser(Long targetUserId);
-    Response unFollowUser(Long targetUserId);
     Response getUserFollowings(Long userId);
     Response getUserFollowers(Long userId);
 

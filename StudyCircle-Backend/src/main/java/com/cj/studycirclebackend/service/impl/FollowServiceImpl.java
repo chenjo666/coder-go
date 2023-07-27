@@ -2,6 +2,7 @@ package com.cj.studycirclebackend.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cj.studycirclebackend.constants.NoticeTopic;
+import com.cj.studycirclebackend.dto.Response;
 import com.cj.studycirclebackend.service.FollowService;
 import com.cj.studycirclebackend.dao.FollowMapper;
 import com.cj.studycirclebackend.enums.NoticeType;
@@ -10,6 +11,7 @@ import com.cj.studycirclebackend.event.EventProducer;
 import com.cj.studycirclebackend.event.FollowUserEvent;
 import com.cj.studycirclebackend.pojo.Follow;
 import com.cj.studycirclebackend.util.RedisUtil;
+import com.cj.studycirclebackend.util.UserUtil;
 import jakarta.annotation.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,8 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
     private EventProducer eventProducer;
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
+    @Resource
+    private UserUtil userUtil;
 
     @Override
     public void createFollowUser(Long userFromId, Long userToId) {
@@ -62,5 +66,23 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
     public Set<Object> getUserFollowings(Long userId) {
         String key = RedisUtil.getUserFollowingKey(userId);
         return redisTemplate.opsForZSet().reverseRangeByScore(key, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY);
+    }
+
+    @Override
+    public Response followUser(Long targetUserId) {
+        if (userUtil.getUser() == null) {
+            return Response.unauthorized();
+        }
+        createFollowUser(userUtil.getUser().getId(), targetUserId);
+        return Response.ok();
+    }
+
+    @Override
+    public Response unFollowUser(Long targetUserId) {
+        if (userUtil.getUser() == null) {
+            return Response.unauthorized();
+        }
+        deleteFollowUser(userUtil.getUser().getId(), targetUserId);
+        return Response.ok();
     }
 }

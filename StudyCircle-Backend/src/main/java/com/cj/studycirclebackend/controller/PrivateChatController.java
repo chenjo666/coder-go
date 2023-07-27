@@ -1,6 +1,5 @@
 package com.cj.studycirclebackend.controller;
 
-import com.cj.studycirclebackend.enums.ResponseCode;
 import com.cj.studycirclebackend.service.LetterService;
 import com.cj.studycirclebackend.dto.Response;
 import com.cj.studycirclebackend.service.BlockedLetterService;
@@ -13,55 +12,45 @@ import java.util.Date;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/letters")
-public class LetterController {
+@RequestMapping("/private_chat")
+public class PrivateChatController {
     @Resource
     private LetterService letterService;
     @Resource
     private BlockedLetterService blockedLetterService;
 
-    @GetMapping
+    // v1 - 得到某人的全部私信
+    @GetMapping("/v1/letters")
     public Response getLetterList(@CookieValue("token") String token) {
-        if (StringUtils.isBlank(token)) {
-            return Response.builder().code(-1).msg("请先登录！").build();
-        }
         return letterService.getLetterList(token);
     }
-
-    @GetMapping("/{userId}/messages")
-    public Response getLetterDetails(@PathVariable("userId") Long userId) {
-        return letterService.getLetterDetails(userId);
+    // v1 - 得到某人与某人的私信记录
+    @GetMapping("/v1/letters/{toUserId}")
+    public Response getLetterDetails(@PathVariable("toUserId") Long toUserId) {
+        return letterService.getLetterDetails(toUserId);
     }
-
-    @PostMapping
+    // v1 - 创建一条私信
+    @PostMapping("/v1/letters")
     public Response createLetter(@RequestBody Map<String, String> args) {
-        Long userId = Long.valueOf(args.get("userId"));
+        Long userId = Long.valueOf(args.get("toUserId"));
         String content = args.get("content");
         Date date = DataUtil.formatStringToDate(args.get("sendTime"));
         return letterService.createLetter(userId, content, date);
     }
-
-    @DeleteMapping("/{userId}")
-    public Response deleteLetters(@PathVariable("userId") Long userId) {
-        return letterService.deleteLetters(userId);
+    // v1 - 删除与某人的私信记录
+    @DeleteMapping("/v1/letters/{toUserId}")
+    public Response deleteLetters(@PathVariable("toUserId") Long toUserId) {
+        return letterService.deleteLetters(toUserId);
     }
 
-    /**
-     * 添加屏蔽私信
-     * @param blockedUserId
-     * @return
-     */
-    @PostMapping("/blocks/{blockedUserId}")
+    // v1 - 添加屏蔽私信
+    @PostMapping("/v1/letters/blocks/{blockedUserId}")
     public Response createBlockedLetter(@PathVariable("blockedUserId") Long blockedUserId) {
         return blockedLetterService.createBlockedLetter(blockedUserId);
     }
 
-    /**
-     * 取消屏蔽私信
-     * @param blockedUserId
-     * @return
-     */
-    @DeleteMapping("/blocks/{blockedUserId}")
+    // v1 - 取消屏蔽私信
+    @DeleteMapping("/v1/letters/blocks/{blockedUserId}")
     public Response deleteBlockedLetter(@PathVariable("blockedUserId") Long blockedUserId) {
         return blockedLetterService.deleteBlockedLetter(blockedUserId);
     }

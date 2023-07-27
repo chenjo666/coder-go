@@ -99,12 +99,13 @@ public class PostServiceTests {
     }
     @Resource
     private CommentService commentService;
-    @Test
-    public void addFieldReplyTotal() {
-        List<Post> list = postService.list();
-        for (Post post : list) {
-            post.setReplyTotal(commentService.getPostRepliesByPostId(post.getId()));
-        }
-        postService.updateBatchById(list);
-    }
+//    @Deprecated
+//    @Test
+//    public void addFieldReplyTotal() {
+//        List<Post> list = postService.list();
+//        for (Post post : list) {
+//            post.setReplyTotal(commentService.getPostRepliesByPostId(post.getId()));
+//        }
+//        postService.updateBatchById(list);
+//    }
 }

@@ -2,9 +2,13 @@ package com.cj.studycirclebackend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cj.studycirclebackend.constants.NoticeTopic;
 import com.cj.studycirclebackend.dto.Response;
+import com.cj.studycirclebackend.enums.NoticeType;
 import com.cj.studycirclebackend.enums.UserStatus;
 import com.cj.studycirclebackend.enums.UserType;
+import com.cj.studycirclebackend.event.Event;
+import com.cj.studycirclebackend.event.SendMailEvent;
 import com.cj.studycirclebackend.pojo.Ticket;
 import com.cj.studycirclebackend.pojo.User;
 import com.cj.studycirclebackend.service.FollowService;
@@ -16,7 +20,6 @@ import com.cj.studycirclebackend.util.RedisUtil;
 import com.cj.studycirclebackend.vo.UserVO;
 import com.cj.studycirclebackend.dao.UserMapper;
 import com.cj.studycirclebackend.event.EventProducer;
-import com.cj.studycirclebackend.util.UserUtil;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
@@ -43,25 +46,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Resource
     private FollowService followService;
     @Resource
-    private UserUtil userUtil;
-    @Resource
     private EmailUtil emailUtil;
     @Override
     public Response login(String email, String password, HttpServletResponse response) {
-        if (StringUtils.isBlank(email) || StringUtils.isBlank(password)) {
-            return Response.badRequest();
-        }
         // 1. 查询用户
         User user = getOne(new QueryWrapper<User>().eq("email", email));
         // 1.1 用户不存在，则退出
         if (user == null) {
-            return Response.loginFailed();
+            return Response.notContent();
         }
         // 1.2 用户存在则解密密码
         password = DataUtil.md5(password + user.getSalt());
         // 2.1 登录失败
         if (!password.equals(user.getPassword())) {
-            return Response.loginFailed();
+            return Response.notContent();
         }
         // 2.2 登录成功
         String token = DataUtil.generateUUID();
@@ -69,19 +67,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         response.addCookie(cookie);
 
         logger.info("User /login: {}", user);
-        return Response.loginSuccess(user);
+        return Response.ok(user);
     }
 
     @Override
     public Response register(String email, String password, String code, HttpServletResponse response) {
-        if (StringUtils.isBlank(email) || StringUtils.isBlank(password)  || StringUtils.isBlank(password)) {
-            return Response.badRequest();
-        }
         // 1. 查询用户
         User user = getOne(new QueryWrapper<User>().eq("email", email).eq("activation_code", code));
         // 1.1 用户不存在
         if (user == null) {
-            return Response.registerFailed();
+            return Response.notContent();
         }
         // 1.2 注册成功，修改用户状态
         String token = DataUtil.generateUUID();
@@ -96,14 +91,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         response.addCookie(cookie);
 
         logger.info("User /register: {}", email);
-        return Response.registerSuccess(user);
+        return Response.ok(user);
     }
 
     @Override
     public Response activate(String email) {
-        if (email == null) {
-            return Response.badRequest();
-        }
         User user = getOne(new QueryWrapper<User>().eq("email", email));
         // 用户已经注册并且已经激活
         if (user != null && user.getIsRegister() == 1) {
@@ -113,11 +105,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String uuidCode = DataUtil.generateUUID();
 
         // 同步发送邮件
-        emailUtil.send(email, "您正在注册学友圈账号，这是您的验证码", uuidCode);
+//        emailUtil.send(email, "您正在注册学友圈账号，这是您的验证码", uuidCode);
 
         // 异步发送邮件
-//        Event mailEvent = new SendMailEvent(Topic.MAIL, NoticeType.SEND_MAIL.getValue(), email, "您正在注册学友圈账号，这是您的验证码", uuidCode);
-//        eventProducer.createEvent(mailEvent);
+        Event mailEvent = new SendMailEvent(NoticeTopic.MAIL, NoticeType.SEND_MAIL.getValue(), email, "您正在注册学友圈账号，这是您的验证码", uuidCode);
+        eventProducer.createEvent(mailEvent);
 
         if (user != null) {
             // 增加激活码
@@ -139,9 +131,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public Response logout(String token) {
-        if (StringUtils.isBlank(token)) {
-            return Response.badRequest();
-        }
         // 1. 得到凭证
         Ticket ticket = ticketService.getTicket(token);
         if (ticket == null) {
@@ -154,43 +143,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         logger.info("User logout: {}", ticket.getUserId());
         return Response.ok();
     }
-
-
-
-
-
-    @Override
-    public Response followUser(Long targetUserId) {
-        if (targetUserId == null || userUtil.getUser() == null) {
-            return Response.badRequest();
-        }
-        followService.createFollowUser(userUtil.getUser().getId(), targetUserId);
-        return Response.ok();
-    }
-
-    @Override
-    public Response unFollowUser(Long targetUserId) {
-        if (targetUserId == null || userUtil.getUser() == null) {
-            return Response.badRequest();
-        }
-        followService.deleteFollowUser(userUtil.getUser().getId(), targetUserId);
-
-        return Response.ok();
-    }
-
     @Override
     public Response getUserFollowings(Long userId) {
-        if (userId == null) {
-            return Response.badRequest();
-        }
         Set<Object> followings = followService.getUserFollowings(userId);
         return getUserVOListBySet(followings);
     }
     @Override
     public Response getUserFollowers(Long userId) {
-        if (userId == null) {
-            return Response.badRequest();
-        }
         Set<Object> followers = followService.getUserFollowers(userId);
         return getUserVOListBySet(followers);
     }

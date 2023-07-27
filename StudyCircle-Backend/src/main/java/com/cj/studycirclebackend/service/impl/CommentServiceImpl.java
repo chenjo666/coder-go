@@ -38,15 +38,16 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     /*********************************** 两个查询评论业务 ***********************************/
     @Override
     public Response getAllCommentsByPost(Long postId, String orderMode, Integer currentPage, Integer pageSize) {
-        if (postId == null || StringUtils.isBlank(orderMode) || currentPage == null || pageSize == null) {
-            return Response.badRequest();
-        }
-        return Response.ok(getCommentVOs(postId, orderMode, currentPage, pageSize));
+        List<CommentVO> commentVOs = getCommentVOs(postId, orderMode, currentPage, pageSize);
+        return commentVOs == null ? Response.notFound() : Response.ok();
     }
     @Override
     public Response getAllCommentsByComment(Long commentId) {
         List<Comment> comments = getChildCommentsByComment(commentId);
-        List<CommentVO> childCommentListVO = new ArrayList<>();
+        if (comments == null) {
+            return Response.notFound();
+        }
+        List<CommentVO> childCommentListVO = new ArrayList<>(comments.size());
         for (Comment comment :comments) {
             childCommentListVO.add(getCommentVO(comment));
         }
@@ -56,8 +57,8 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     /*********************************** 三个更新评论业务 ***********************************/
     @Override
     public Response createComment(Long objectId, String objectType, String content) {
-        if (objectId == null || StringUtils.isBlank(objectType) || StringUtils.isBlank(content)) {
-            return Response.badRequest();
+        if (userUtil.getUser() == null) {
+            return Response.unauthorized();
         }
         Comment comment = new Comment();
         comment.setUserId(userUtil.getUser().getId());
@@ -66,7 +67,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         comment.setContent(TextUtil.filter(content));
         comment.setCommentTime(new Date());
         comment.setScore(0);
-        save(comment);
+        boolean res = save(comment);
         // 评论事件
         Event event;
         if (objectType.equals(CommentObj.POST)) {
@@ -76,23 +77,17 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         }
         eventProducer.createEvent(event);
 
-        return Response.ok();
+        return res ? Response.created() : Response.internalServerError();
     }
     @Override
     public Response deleteComment(Long commentId) {
-        if (commentId == null) {
-            return Response.badRequest();
-        }
-        removeById(commentId);
-        return Response.ok();
+        boolean res = removeById(commentId);
+        return res ? Response.notContent() : Response.notFound();
     }
     @Override
     public Response updateComment(Long commentId, String newContent) {
-        if (commentId == null || StringUtils.isBlank(newContent)) {
-            return Response.badRequest();
-        }
-        update(new UpdateWrapper<Comment>().set("content", newContent).eq("id", commentId));
-        return Response.ok();
+        boolean res = update(new UpdateWrapper<Comment>().set("content", newContent).eq("id", commentId));
+        return res ? Response.ok() : Response.notFound();
     }
 
     /*********************************** 评论辅助工具业务 ***********************************/
@@ -107,10 +102,10 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     }
     @Override
     public List<CommentVO> getCommentVOs(Long postId, String orderMode, Integer currentPage, Integer pageSize) {
-        if (postId == null || StringUtils.isBlank(orderMode) || currentPage == null || pageSize == null) {
+        List<Comment> commentParentList = list(getQueryWrapper(postId, orderMode, currentPage, pageSize));
+        if (commentParentList == null) {
             return null;
         }
-        List<Comment> commentParentList = list(getQueryWrapper(postId, orderMode, currentPage, pageSize));
         // 外层评论排序
         commentParentList.sort(Comparator.comparing(Comment::getScore));
         // 构建外层评论视图
@@ -163,16 +158,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
             dfs(childComment.getId(), ans);
         }
     }
-    // 得到帖子的评论数量 【getParentCommentsByPost】【getChildCommentsByComment】
-    @Override
-    public Long getPostRepliesByPostId(Long postId) {
-        List<Comment> parentComments = getParentCommentsByPost(postId);
-        Long commentReplyTotal = 0L;
-        for (Comment comment : parentComments) {
-            commentReplyTotal += getChildCommentsByComment(comment.getId()).size();
-        }
-        return commentReplyTotal + parentComments.size();
-    }
+
     // 得到评论所在的帖子 id（递归实现【getPostIdByCommentId】）
     @Override
     public Long getPostIdByCommentId(Long commentId) {
@@ -207,16 +193,16 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     /*********************************** 两个点赞相关业务 ***********************************/
     @Override
     public Response likeComment(Long commentId) {
-        if (commentId == null || userUtil.getUser() == null) {
-            return Response.badRequest();
+        if (userUtil.getUser() == null) {
+            return Response.unauthorized();
         }
         likeService.createCommentLike(commentId, userUtil.getUser().getId());
         return Response.ok();
     }
     @Override
     public Response dislikeComment(Long commentId) {
-        if (commentId == null || userUtil.getUser() == null) {
-            return Response.badRequest();
+        if (userUtil.getUser() == null) {
+            return Response.unauthorized();
         }
         likeService.deleteCommentLike(commentId, userUtil.getUser().getId());
         return Response.ok();

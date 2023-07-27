@@ -38,9 +38,9 @@ public class TicketInterceptor implements HandlerInterceptor {
                     if (token != null) {
                         // 得到 ticket
                         Ticket ticket = ticketService.getTicket(token);
-
+                        logger.info("token: {}, ticket: {}", token, ticket);
                         // 存储 user（ticket存在，ticket有效，ticket没有过期）
-                        if (ticket != null && ticket.getIsValid() == 1) {
+                        if (ticket != null) {
                             User user = userService.getById(ticket.getUserId());
                             userUtil.setUser(user);
                             logger.info("login: " + user);
@@ -50,5 +50,10 @@ public class TicketInterceptor implements HandlerInterceptor {
             }
         }
         return true;
+    }
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+        userUtil.removeUser();
+        logger.info("end request!");
     }
 }

@@ -17,19 +17,24 @@ public class BlockedLetterServiceImpl extends ServiceImpl<BlockedLetterMapper, B
     private UserUtil userUtil;
     @Override
     public Response createBlockedLetter(Long blockedUserId) {
+        if (userUtil.getUser() == null) {
+            return Response.unauthorized();
+        }
         BlockedLetter blockedLetter = new BlockedLetter();
         blockedLetter.setUserId(userUtil.getUser().getId());
         blockedLetter.setBlockedUserId(blockedUserId);
-        save(blockedLetter);
-        return Response.ok();
+        boolean res = save(blockedLetter);
+        return res ? Response.created() : Response.internalServerError();
     }
-
 
     @Override
     public Response deleteBlockedLetter(Long blockedUserId) {
-        remove(new QueryWrapper<BlockedLetter>()
+        if (userUtil.getUser() == null) {
+            return Response.unauthorized();
+        }
+        boolean res = remove(new QueryWrapper<BlockedLetter>()
                 .eq("user_id", userUtil.getUser().getId())
                 .eq("blocked_user_id", blockedUserId));
-        return Response.ok();
+        return res ? Response.notContent() : Response.notFound();
     }
 }

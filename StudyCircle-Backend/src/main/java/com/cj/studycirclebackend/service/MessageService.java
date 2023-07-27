@@ -10,12 +10,14 @@ import java.util.List;
 
 public interface MessageService extends IService<Message> {
 
-    List<MessageVO> createMessage(Long conversationId, Long messageTargetId, String question);
+    Response getMessage(Long conversationId);
+    Response createMessage(Long conversationId, Long messageTargetId, String question);
     Response deleteMessage(Long messageId);
-    MessageVO updateMessage(Long messageId);
+    Response updateMessage(Long messageId);
 
 
     MessageVO getMessageVO(Message message);
+
     List<MessageVO> getMessageVOList(Long conversationId);
     List<MessageVO> getMessageVOList(List<Message> messageList);
 }

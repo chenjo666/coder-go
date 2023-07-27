@@ -14,7 +14,6 @@ import com.cj.studycirclebackend.service.MessageService;
 import com.cj.studycirclebackend.util.AIChatUtil;
 import com.cj.studycirclebackend.util.DataUtil;
 import jakarta.annotation.Resource;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -30,10 +29,7 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
     private AIChatUtil aiChatUtil;
 
     @Override
-    public List<MessageVO> createMessage(Long conversationId, Long messageTargetId, String question) {
-        if (conversationId == null || StringUtils.isBlank(question)) {
-            return null;
-        }
+    public Response createMessage(Long conversationId, Long messageTargetId, String question) {
         List<AIMessage> messages = new ArrayList<>();
         // 短文本历史记录
 
@@ -70,7 +66,7 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
 
         messageVOList.add(userMessageVO);
         messageVOList.add(aiMessageVO);
-        return messageVOList;
+        return Response.ok(messageVOList);
     }
 
     @Override
@@ -83,33 +79,20 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
         return messageVO;
     }
 
-    @Override
-    public List<MessageVO> getMessageVOList(List<Message> messageList) {
-        List<MessageVO> messageVOList = new ArrayList<>(messageList.size());
-        for (Message message : messageList) {
-            messageVOList.add(getMessageVO(message));
-        }
-        return messageVOList;
-    }
+
 
     @Override
     public Response deleteMessage(Long messageId) {
-        if (messageId == null) {
-            return Response.badRequest();
-        }
-        update(new UpdateWrapper<Message>().set("is_deleted", 1).eq("id", messageId));
-        return Response.ok();
+        boolean res = update(new UpdateWrapper<Message>().set("is_deleted", 1).eq("id", messageId));
+        return res ? Response.ok() : Response.notContent();
     }
 
     @Override
-    public MessageVO updateMessage(Long messageId) {
-        if (messageId == null) {
-            return null;
-        }
+    public Response updateMessage(Long messageId) {
         List<AIMessage> messages = new ArrayList<>();
         Message message = getById(messageId);
         if (message == null) {
-            return null;
+            return Response.notContent();
         }
         String question = getById(message.getMessageTargetId()).getContent();
         // 历史会话
@@ -119,25 +102,32 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
         long tokens = aiResponse.getUsage().getCompletionTokens();
         message.setContent(content);
         message.setTokens(tokens);
-        saveOrUpdate(message);
+        boolean res = saveOrUpdate(message);
 
-        return getMessageVO(message);
+        return res ? Response.ok(getMessageVO(message)) : Response.internalServerError();
+    }
+
+    @Override
+    public Response getMessage(Long conversationId) {
+        List<MessageVO> res = getMessageVOList(conversationId);
+        return res != null ? Response.ok() : Response.notContent();
     }
 
     @Override
     public List<MessageVO> getMessageVOList(Long conversationId) {
-        if (conversationId == null) {
-            return null;
-        }
         List<Message> messages = list(new QueryWrapper<Message>().
-                        eq("conversation_id", conversationId)
-                        .eq("is_deleted", 0)
-                        .orderByAsc("send_time"));
+                eq("conversation_id", conversationId)
+                .eq("is_deleted", 0)
+                .orderByAsc("send_time"));
         if (messages == null) {
             return null;
         }
-        List<MessageVO> messageVOList = new ArrayList<>();
-        for (Message message : messages) {
+        return getMessageVOList(messages);
+    }
+    @Override
+    public List<MessageVO> getMessageVOList(List<Message> messageList) {
+        List<MessageVO> messageVOList = new ArrayList<>(messageList.size());
+        for (Message message : messageList) {
             messageVOList.add(getMessageVO(message));
         }
         return messageVOList;

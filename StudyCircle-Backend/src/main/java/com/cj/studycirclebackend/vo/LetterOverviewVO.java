@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class LetterOverviewVO {
     // 对方信息
-    private String userId;
+    private Long userId;
     private String userName;
     private String userAvatar;
     // 是否粉丝、关注、屏蔽

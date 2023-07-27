@@ -3,16 +3,13 @@ package com.cj.studycirclebackend.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cj.studycirclebackend.dao.ConversationMapper;
-import com.cj.studycirclebackend.pojo.Message;
 import com.cj.studycirclebackend.service.MessageService;
 import com.cj.studycirclebackend.vo.ConversationVO;
 import com.cj.studycirclebackend.vo.MessageVO;
-import com.cj.studycirclebackend.dao.MessageMapper;
 import com.cj.studycirclebackend.dto.Response;
 import com.cj.studycirclebackend.pojo.Conversation;
 import com.cj.studycirclebackend.pojo.User;
 import com.cj.studycirclebackend.service.ConversationService;
-import com.cj.studycirclebackend.util.DataUtil;
 import com.cj.studycirclebackend.util.UserUtil;
 import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
@@ -32,80 +29,75 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
 
     @Override
     public Response getConversationAll() {
-        User user = userUtil.getUser();
-        if (user == null) {
-            return Response.invalidOperation();
+        if (userUtil.getUser() == null) {
+            return Response.unauthorized();
         }
-        Map<String, Object> data = new HashMap<>();
+
         // 查询当前用户的全部对话信息，倒序排序
-        List<ConversationVO> conversationVOList = getConversationVOList(user.getId());
+        List<ConversationVO> conversationVOList = getConversationVOList(userUtil.getUser().getId());
+        if (conversationVOList == null) {
+            return Response.notContent();
+        }
 
         // 第一个对话的消息记录
-        if (conversationVOList != null) {
-            List<MessageVO> messageListVO = messageService.getMessageVOList(conversationVOList.get(0).getConversationId());
-            data.put("conversationListVO", conversationVOList);
-            data.put("messageListVO", messageListVO);
-        }
-
+        Map<String, Object> data = new HashMap<>();
+        List<MessageVO> messageListVO = messageService.getMessageVOList(conversationVOList.get(0).getConversationId());
+        data.put("conversationListVO", conversationVOList);
+        data.put("messageListVO", messageListVO);
         return Response.ok(data);
     }
 
 
     @Override
     public Response addConversation() {
-        User user = userUtil.getUser();
-        if (user == null) {
-            return Response.invalidOperation();
+        if (userUtil.getUser() == null) {
+            return Response.unauthorized();
         }
         Conversation conversation = new Conversation();
-        conversation.setUserId(user.getId());
+        conversation.setUserId(userUtil.getUser().getId());
         conversation.setName("新对话");
         conversation.setCreateTime(new Date());
         conversation.setIsDeleted(0);
-        save(conversation);
+        boolean res = save(conversation);
 
-        return Response.ok(getConversationVO(conversation));
+        return res ? Response.ok(getConversationVO(conversation)) : Response.internalServerError();
     }
 
     @Override
     public Response delConversation(Long conversationId) {
-        if (conversationId == null) {
-            return Response.badRequest();
-        }
         Conversation conversation = getById(conversationId);
         conversation.setIsDeleted(1);
-        updateById(conversation);
-        return Response.ok();
+        boolean res = updateById(conversation);
+        return res ? Response.ok() : Response.notContent();
     }
 
     @Override
     public Response setConversationName(Long conversationId, String newName) {
-        if (conversationId == null || StringUtils.isBlank(newName)) {
-            return Response.badRequest();
-        }
         Conversation conversation = getById(conversationId);
         conversation.setName(newName);
-        updateById(conversation);
-        return Response.ok();
+        boolean res = updateById(conversation);
+        return res ? Response.ok() : Response.notContent();
     }
 
 
     @Override
     public List<ConversationVO> getConversationVOList(Long userId) {
-        if (userId == null) return null;
+        if (userId == null) { return null;}
+
         // 查询当前用户的全部对话信息，倒序排序
         List<Conversation> conversationList = list(
                 new QueryWrapper<Conversation>()
                         .eq("user_id", userId)
                         .eq("is_deleted", 0)
                         .orderByDesc("create_time"));
+        if (conversationList == null) {
+            return null;
+        }
         return getConversationVOList(conversationList);
     }
 
     @Override
     public List<ConversationVO> getConversationVOList(List<Conversation> conversationList) {
-        if (conversationList == null) return null;
-
         List<ConversationVO> conversationVOList = new ArrayList<>(conversationList.size());
         for (Conversation conversation : conversationList) {
             conversationVOList.add(getConversationVO(conversation));
@@ -116,7 +108,6 @@ public class ConversationServiceImpl extends ServiceImpl<ConversationMapper, Con
 
     @Override
     public ConversationVO getConversationVO(Conversation conversation) {
-        if (conversation == null) return null;
         ConversationVO conversationVO = new ConversationVO();
         conversationVO.setConversationId(conversation.getId());
         conversationVO.setConversationName(conversation.getName());

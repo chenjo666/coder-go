@@ -63,9 +63,6 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
 
     @Override
     public Response getPostDetail(Long postId, Integer currentPage, Integer pageSize) {
-        if (postId == null || currentPage == null || pageSize == null) {
-            return Response.badRequest();
-        }
         Post post = getById(postId);
         if (post == null) {
             return Response.notContent();
@@ -73,21 +70,22 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         PostDetailVO postDetailVO = getPostDetailVO(post);
 
         List<CommentVO> commentVOs = commentService.getCommentVOs(postId, CommentSort.DEFAULT, currentPage, pageSize);
-
+        if (commentVOs == null) {
+            return Response.notContent();
+        }
         postDetailVO.setPostReplies(commentVOs.size());  // 外层评论数量
-        postDetailVO.setCommentReplies(Math.toIntExact(commentService.getPostRepliesByPostId(postId) - commentVOs.size()));         // 内层评论数量
+        postDetailVO.setCommentReplies(Math.toIntExact(post.getReplyTotal() - commentVOs.size())); // 内层评论数量
         postDetailVO.setParentCommentListVO(commentVOs);  // 子评论
 
         return Response.ok(postDetailVO);
     }
     @Override
     public Response createPost(String postTitle, String postContent, String postType, List<String> postTags) {
-        if (StringUtils.isBlank(postTitle) || StringUtils.isBlank(postContent) || StringUtils.isBlank(postType) || postTags == null) {
-            throw new IllegalArgumentException("参数不能为空！");
+        if (userUtil.getUser() == null) {
+            return Response.unauthorized();
         }
-        User user = userUtil.getUser();
         Post post = new Post();
-        post.setUserId(user.getId());
+        post.setUserId(userUtil.getUser().getId());
         post.setTitle(postTitle);
         post.setContent(TextUtil.filter(postContent));
         post.setType(postType);
@@ -96,41 +94,33 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         post.setIsTop(0);
         post.setTags(unionTags(postTags));
         // mysql 存储帖子
-        save(post);
+        boolean res = save(post);
         // elasticsearch 存储帖子
-        elasticsearchTemplate.save(post);
-        return Response.ok();
+        Post p = elasticsearchTemplate.save(post);
+        return Response.ok(post);
     }
     // 更新帖子
     @Override
     public Response updatePost(Long postId, String newContent) {
-        if (postId == null || StringUtils.isBlank(newContent)) {
-            return Response.badRequest();
-        }
-        boolean result = update(new UpdateWrapper<Post>().set("content", newContent).eq("id", postId));
-        if (!result)
-            return Response.notContent();
-        return Response.ok();
+        boolean res = update(new UpdateWrapper<Post>().set("content", newContent).eq("id", postId));
+        return res ? Response.ok() : Response.notContent();
     }
     // 删除帖子
     @Override
     public Response deletePost(Long postId) {
-        if (postId == null) {
-            return Response.badRequest();
-        }
         // mysql 删除
         boolean result = removeById(postId);
         // es 删除
         elasticsearchTemplate.delete(postId.toString(), Post.class);
-        return Response.ok();
+        return result ? Response.ok() : Response.notContent();
     }
     @Override
     public Response getPostPublications(Long userId) {
-        if (userId == null) {
-            return Response.badRequest();
-        }
         // 1. 得到发布的帖子
         List<Post> posts = list(new QueryWrapper<Post>().eq("user_id", userId));
+        if (posts == null) {
+            return Response.notContent();
+        }
         // 2. 转换为 VO
         List<PostPersonalVO> postPersonalVOList = posts
                 .stream()
@@ -140,12 +130,12 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     }
     @Override
     public Response getPostFavorites(Long userId) {
-        if (userId == null) {
-            return Response.badRequest();
-        }
         // 1. 得到收藏的帖子
         List<Post> posts = list(new QueryWrapper<Post>()
                 .inSql("id", "SELECT post_id FROM favorite WHERE user_id = " + userId));
+        if (posts == null) {
+            return Response.notContent();
+        }
         // 2. 转换为 VO
         List<PostPersonalVO> postPersonalVOList = posts
                 .stream()
@@ -179,7 +169,6 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         if (StringUtils.isBlank(type) || StringUtils.isBlank(order) || page == null || limit == null) {
             return Response.badRequest();
         }
-        long time = System.currentTimeMillis();
         Map<String, Object> data = new HashMap<>();
         List<PostOverviewVO> postOverviewVOs = new ArrayList<>();
         // 搜索条件
@@ -293,32 +282,32 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     /*********************************** 四个点赞、收藏相关业务 ***********************************/
     @Override
     public Response likePost(Long postId) {
-        if (postId == null || userUtil.getUser().getId() == null) {
-            return Response.badRequest();
+        if ( userUtil.getUser() == null) {
+            return Response.unauthorized();
         }
         likeService.createPostLike(postId, userUtil.getUser().getId());
-        return Response.ok();
+        return Response.created();
     }
     @Override
     public Response dislikePost(Long postId) {
-        if (postId == null || userUtil.getUser().getId() == null) {
-            return Response.badRequest();
+        if (userUtil.getUser() == null) {
+            return Response.unauthorized();
         }
         likeService.deletePostLike(postId, userUtil.getUser().getId());
         return Response.ok();
     }
     @Override
     public Response favoritePost(Long postId) {
-        if (postId == null || userUtil.getUser().getId() == null) {
-            return Response.badRequest();
+        if (userUtil.getUser() == null) {
+            return Response.unauthorized();
         }
         favoriteService.createPostFavorite(postId, userUtil.getUser().getId());
         return Response.ok();
     }
     @Override
     public Response unFavoritePost(Long postId) {
-        if (postId == null || userUtil.getUser().getId() == null) {
-            return Response.badRequest();
+        if (userUtil.getUser() == null) {
+            return Response.unauthorized();
         }
         favoriteService.deletePostFavorite(postId, userUtil.getUser().getId());
         return Response.ok();
@@ -334,7 +323,6 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     // 转换 PostOverviewVO 对象
     @Override
     public PostOverviewVO getPostOverviewVO(Post post) {
-        long time = System.currentTimeMillis();
         PostOverviewVO postOverviewVO = new PostOverviewVO();
         // 帖子作者
         User author = userService.getById(post.getUserId());

@@ -24,7 +24,7 @@ public class NotificationController {
     }
     // v1 - 查找通知列表
     @GetMapping("/v1/notices")
-    public Response getNotice(@RequestParam Integer page, @RequestParam Integer limit) {
+    public Response getNotice(@CookieValue("token") String token, @RequestParam Integer page, @RequestParam Integer limit) {
         return noticeService.getNotice(page, limit);
     }
 }
