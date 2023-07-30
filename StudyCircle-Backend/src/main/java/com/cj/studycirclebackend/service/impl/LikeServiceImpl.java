@@ -25,7 +25,7 @@ public class LikeServiceImpl extends ServiceImpl<LikeMapper, Like> implements Li
         redisTemplate.opsForZSet().add(key, userId, System.currentTimeMillis());
 
         // 点赞事件
-        Event event = new LikePostEvent(NoticeTopic.LIKE, NoticeType.LIKE_POST.getValue(), postId, userId);
+        Event event = new LikePostEvent(NoticeTopic.LIKE_POST, NoticeType.LIKE_POST.getValue(), postId, userId);
         eventProducer.createEvent(event);
     }
 
@@ -35,7 +35,7 @@ public class LikeServiceImpl extends ServiceImpl<LikeMapper, Like> implements Li
         redisTemplate.opsForZSet().add(key, userId, System.currentTimeMillis());
 
         // 点赞事件
-        Event event = new LikeCommentEvent(NoticeTopic.LIKE, NoticeType.LIKE_COMMENT.getValue(), commentId, userId);
+        Event event = new LikeCommentEvent(NoticeTopic.LIKE_COMMENT, NoticeType.LIKE_COMMENT.getValue(), commentId, userId);
         eventProducer.createEvent(event);
     }
 

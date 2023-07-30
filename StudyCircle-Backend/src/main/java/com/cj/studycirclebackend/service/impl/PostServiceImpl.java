@@ -19,6 +19,9 @@ import com.cj.studycirclebackend.pojo.Post;
 import com.cj.studycirclebackend.pojo.User;
 import com.cj.studycirclebackend.util.DataUtil;
 import com.cj.studycirclebackend.util.UserUtil;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -38,6 +41,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -169,6 +173,16 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         if (StringUtils.isBlank(type) || StringUtils.isBlank(order) || page == null || limit == null) {
             return Response.badRequest();
         }
+        // 如果达到查询缓存条件，则查询缓存
+//        if (type.equals(PostType.ALL.getValue()) && StringUtils.isBlank(key)) {
+//            return Response.ok(homeCache.get(getCacheKey(order, page, limit)));
+//        }
+        // 否则加载数据库
+        Map<String, Object> data = searchPostsHelper(type, order, key, page, limit);
+        return Response.ok(data);
+    }
+
+    private Map<String, Object> searchPostsHelper(String type, String order, String key, Integer page, Integer limit) {
         Map<String, Object> data = new HashMap<>();
         List<PostOverviewVO> postOverviewVOs = new ArrayList<>();
         // 搜索条件
@@ -194,12 +208,10 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
             // 4. 载入容器
             postOverviewVOs.add(getPostOverviewVO(post));
         }
-//        logger.info("es 搜索高亮 + 转换耗时: {}", System.currentTimeMillis() - time);
         // 5. 载入结果
         data.put("posts", postOverviewVOs);
-        return Response.ok(data);
+        return data;
     }
-
     /*********************************** 两个查询构造条件 ***********************************/
     // 构建查询条件 elasticsearch
     public NativeQueryBuilder getQueryBuilder(String type, String order, String key) {
@@ -391,5 +403,30 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         Long likes = likeService.getPostLikeTotal(post.getId());
         postPersonalVO.setPostLikes(likes);
         return postPersonalVO;
+    }
+
+    /****************************************首页数据缓存*****************************************/
+    private static final int maximumSize = 10;
+    private static final int expireSeconds = 300;
+
+    private LoadingCache<String, Map<String, Object>> homeCache;
+
+
+    @PostConstruct
+    public void initCache() {
+        homeCache = Caffeine.newBuilder()
+                .maximumSize(maximumSize)
+                .expireAfterWrite(expireSeconds, TimeUnit.SECONDS)
+                .build(s -> {
+                    String[] parts = s.split(":");
+                    String order = parts[0];
+                    int page = Integer.parseInt(parts[1]);
+                    int limit = Integer.parseInt(parts[2]);
+                    logger.info("load cache from es!");
+                    return searchPostsHelper(PostType.ALL.getValue(), order, null, page, limit);
+                });
+    }
+    private String getCacheKey(String order, Integer page, Integer limit) {
+        return order + ":" + page + ":" + limit;
     }
 }

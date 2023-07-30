@@ -63,7 +63,7 @@ private PostService postService;
         List<User> users = userService.list();
         // 2. 构建标题
         List<Post> posts = new ArrayList<>();
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 100000; i++) {
             Post post = new Post();
             post.setUserId(users.get(random.nextInt(users.size())).getId());
             post.setTitle(p.get(random.nextInt(p.size())).getTitle());
@@ -77,17 +77,18 @@ private PostService postService;
 
             post.setIsGem(random.nextInt(2));
             post.setIsTop(random.nextInt(2));
+            post.setReplyTotal(0L);
             StringBuilder sb = new StringBuilder();
             for (int j = 0; j < random.nextInt(5); j++) {
                 sb.append(additionalTags.get(random.nextInt(40)));
             }
             post.setTags(sb.toString());
-            post.setScore(0.0);
+            post.setScore(random.nextDouble(200));
 
             posts.add(post);
         }
 
-        postService.saveBatch(posts);
+//        postService.saveBatch(posts);
         operations.save(posts);
     }
 

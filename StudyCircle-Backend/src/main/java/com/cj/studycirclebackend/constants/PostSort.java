@@ -11,7 +11,7 @@ public interface PostSort {
     String HOT = "hot";
     String TOP = "top";
 
-    // es 的排序
+    // es 排序规则
     static void queryOrder(NativeQueryBuilder builder, String order) {
         switch (order) {
             case PostSort.DEFAULT -> {
@@ -24,7 +24,7 @@ public interface PostSort {
         }
     }
 
-    // mysql
+    // mysql 排序规则
     static void queryOrder(QueryWrapper<Post> query, String order) {
         switch (order) {
             case PostSort.DEFAULT, PostSort.HOT -> query

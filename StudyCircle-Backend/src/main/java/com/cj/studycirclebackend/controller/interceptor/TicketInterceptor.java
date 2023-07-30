@@ -28,32 +28,33 @@ public class TicketInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         // 从请求中获取 cookie
         Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                // 找到 cookie
-                if (TOKEN_NAME.equals(cookie.getName())){
-                    // 拿到 token
-                    String token = cookie.getValue();
-                    // 检验 token
-                    if (token != null) {
-                        // 得到 ticket
-                        Ticket ticket = ticketService.getTicket(token);
-                        logger.info("token: {}, ticket: {}", token, ticket);
-                        // 存储 user（ticket存在，ticket有效，ticket没有过期）
-                        if (ticket != null) {
-                            User user = userService.getById(ticket.getUserId());
-                            userUtil.setUser(user);
-                            logger.info("login: " + user);
-                        }
+        if (cookies == null) {
+            return true;
+        }
+        for (Cookie cookie : cookies) {
+            // 找到 cookie
+            if (TOKEN_NAME.equals(cookie.getName())){
+                // 拿到 token
+                String token = cookie.getValue();
+                // 检验 token
+                if (token != null) {
+                    // 得到 ticket
+                    Ticket ticket = ticketService.getTicket(token);
+                    logger.info("token: {}, ticket: {}", token, ticket);
+                    // 存储 user
+                    if (ticket != null) {
+                        User user = userService.getById(ticket.getUserId());
+                        userUtil.setUser(user);
+                        logger.info("login: " + user);
                     }
                 }
             }
         }
         return true;
     }
+    // 移除强引用value，排除内存泄漏
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
         userUtil.removeUser();
-        logger.info("end request!");
     }
 }

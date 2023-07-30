@@ -31,8 +31,7 @@ public class ApiLogAspect {
         logger.info("请求路径:  {}", request.getRequestURL().toString());
         logger.info("请求方法:  {}", request.getMethod()); // 打印 Http method
         logger.info("请求接口:  {}.{}", joinPoint.getSignature().getDeclaringTypeName(), joinPoint.getSignature().getName()); // 打印调用 controller 的全路径以及执行方法
-//        logger.info("请求参数:  {}", JSONObject.toJSONString(joinPoint.getArgs())); // 打印请求入参
-        logger.info("请求参数:  {}", JSONUtil.toJsonStr(joinPoint.getArgs())); // 打印请求入参
+        logger.info("请求参数:  {}", JSONUtil.toJsonStr(joinPoint.getArgs()));      // 打印请求入参
         logger.info("用户地址:  {}", request.getRemoteAddr());                      // 打印请求的 IP
     }
 

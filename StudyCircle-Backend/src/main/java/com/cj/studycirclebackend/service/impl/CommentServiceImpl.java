@@ -71,9 +71,9 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         // 评论事件
         Event event;
         if (objectType.equals(CommentObj.POST)) {
-            event = new ReplyPostEvent(NoticeTopic.COMMENT, NoticeType.REPLY_POST.getValue(), objectId, userUtil.getUser().getId());
+            event = new ReplyPostEvent(NoticeTopic.REPLY_POST, NoticeType.REPLY_POST.getValue(), objectId, userUtil.getUser().getId());
         } else {
-            event = new ReplyCommentEvent(NoticeTopic.COMMENT, NoticeType.REPLY_COMMENT.getValue(), objectId, userUtil.getUser().getId());
+            event = new ReplyCommentEvent(NoticeTopic.REPLY_COMMENT, NoticeType.REPLY_COMMENT.getValue(), objectId, userUtil.getUser().getId());
         }
         eventProducer.createEvent(event);
 

@@ -2,7 +2,6 @@ package com.cj.studycirclebackend.event;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.cj.studycirclebackend.constants.NoticeTopic;
-import com.cj.studycirclebackend.enums.NoticeType;
 import com.cj.studycirclebackend.service.NoticeService;
 import com.cj.studycirclebackend.util.EmailUtil;
 import jakarta.annotation.Resource;
@@ -22,67 +21,59 @@ public class EventConsumer {
     @Resource
     private EmailUtil emailUtil;
 
-    @KafkaListener(topics = NoticeTopic.LIKE)
-    public void handleLikeTopic(ConsumerRecord record) {
+    @KafkaListener(topics = NoticeTopic.LIKE_POST)
+    public void handleLikePostTopic(ConsumerRecord record) {
         if (!checkRecord(record)) {
             return;
         }
-        JSONObject jsonObject = JSONObject.parseObject(record.value().toString());
-        int noticeType = jsonObject.getInteger("noticeType");
-        logger.info("like: {}", jsonObject);
-        if (noticeType == NoticeType.LIKE_POST.getValue()) {
-            LikePostEvent likePostEvent = jsonObject.toJavaObject(LikePostEvent.class);
-            Long postId = likePostEvent.getPostId();
-            Long userId = likePostEvent.getUserId();
-            noticeService.createLikePostNotice(postId, userId);
-        } else {
-            LikeCommentEvent likeCommentEvent = jsonObject.toJavaObject(LikeCommentEvent.class);
-            Long commentId = likeCommentEvent.getCommentId();
-            Long userId = likeCommentEvent.getUserId();
-            noticeService.createLikeCommentNotice(commentId, userId);
-        }
+        LikePostEvent event = JSONObject.parseObject(record.value().toString(), LikePostEvent.class);
+        logger.info("like post: {}", event);
+        noticeService.createLikePostNotice(event.getPostId(), event.getUserId());
     }
-    @KafkaListener(topics = NoticeTopic.COMMENT)
-    public void handleCommentEvent(ConsumerRecord record) {
+    @KafkaListener(topics = NoticeTopic.LIKE_COMMENT)
+    public void handleLikeCommentTopic(ConsumerRecord record) {
         if (!checkRecord(record)) {
             return;
         }
-        JSONObject jsonObject = JSONObject.parseObject(record.value().toString());
-        int noticeType = jsonObject.getInteger("noticeType");
-        logger.info("comment: {}", jsonObject);
-        if (noticeType == NoticeType.REPLY_POST.getValue()) {
-            ReplyPostEvent event0 = jsonObject.toJavaObject(ReplyPostEvent.class);
-            Long postId = event0.getPostId();
-            Long userId = event0.getUserId();
-            noticeService.createReplyPostNotice(postId, userId);
-        } else {
-            ReplyCommentEvent event0 = jsonObject.toJavaObject(ReplyCommentEvent.class);
-            Long commentId = event0.getCommentId();
-            Long userId = event0.getUserId();
-            noticeService.createReplyCommentNotice(commentId, userId);
+        LikeCommentEvent event = JSONObject.parseObject(record.value().toString(), LikeCommentEvent.class);
+        logger.info("like comment: {}", event);
+        noticeService.createLikeCommentNotice(event.getCommentId(), event.getUserId());
+    }
+    @KafkaListener(topics = NoticeTopic.REPLY_POST)
+    public void handleReplyPostTopic(ConsumerRecord record) {
+        if (!checkRecord(record)) {
+            return;
         }
+        ReplyPostEvent event = JSONObject.parseObject(record.value().toString(), ReplyPostEvent.class);
+        logger.info("reply post: {}", event);
+        noticeService.createReplyPostNotice(event.getPostId(), event.getUserId());
+    }
+    @KafkaListener(topics = NoticeTopic.REPLY_COMMENT)
+    public void handleReplyCommentTopic(ConsumerRecord record) {
+        if (!checkRecord(record)) {
+            return;
+        }
+        ReplyCommentEvent event = JSONObject.parseObject(record.value().toString(), ReplyCommentEvent.class);
+        logger.info("reply comment: {}", event);
+        noticeService.createReplyCommentNotice(event.getCommentId(), event.getUserId());
     }
     @KafkaListener(topics = NoticeTopic.FAVORITE)
     public void handleFavoriteEvent(ConsumerRecord record) {
         if (!checkRecord(record)) {
             return;
         }
-        FavoritePostEvent favoritePostEvent = JSONObject.parseObject(record.value().toString(), FavoritePostEvent.class);
-        logger.info("favorite: {}", favoritePostEvent);
-        Long postId = favoritePostEvent.getPostId();
-        Long userId =  favoritePostEvent.getUserId();
-        noticeService.createFavoritePostNotice(postId, userId);
+        FavoritePostEvent event = JSONObject.parseObject(record.value().toString(), FavoritePostEvent.class);
+        logger.info("favorite post: {}", event);
+        noticeService.createFavoritePostNotice( event.getPostId(), event.getUserId());
     }
     @KafkaListener(topics = NoticeTopic.FOLLOW)
     public void handlerFollowEvent(ConsumerRecord record) {
         if (!checkRecord(record)) {
             return;
         }
-        FollowUserEvent followUserEvent = JSONObject.parseObject(record.value().toString(), FollowUserEvent.class);
-        logger.info("follow: {}", followUserEvent);
-        Long userFromId = followUserEvent.getUserFromId();
-        Long userToId =  followUserEvent.getUserToId();
-        noticeService.createFollowUserNotice(userFromId, userToId);
+        FollowUserEvent event = JSONObject.parseObject(record.value().toString(), FollowUserEvent.class);
+        logger.info("follow user: {}", event);
+        noticeService.createFollowUserNotice(event.getUserFromId(), event.getUserToId());
     }
 
     /**
@@ -94,14 +85,11 @@ public class EventConsumer {
         if (!checkRecord(record)) {
             return;
         }
-        SendMailEvent sendMailEvent = JSONObject.parseObject(record.value().toString(), SendMailEvent.class);
-        logger.info("User send mail event: {}", sendMailEvent);
-        emailUtil.send(sendMailEvent.getTo(), sendMailEvent.getSubject(), sendMailEvent.getText());
+        SendMailEvent event = JSONObject.parseObject(record.value().toString(), SendMailEvent.class);
+        logger.info("send mail: {}", event);
+        emailUtil.send(event.getTo(), event.getSubject(), event.getText());
     }
     private boolean checkRecord(ConsumerRecord record) {
-        if (record == null || record.value() == null) {
-            return false;
-        }
-        return true;
+        return record != null && record.value() != null;
     }
 }
