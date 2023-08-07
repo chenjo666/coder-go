@@ -58,34 +58,31 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @Resource
     private LikeService likeService;
     @Resource
-    private FollowService followService;
-    @Resource
     private ArticleFavoriteService favoriteService;
     @Resource
     private ArticleCommentService articleCommentService;
     @Resource
     private ElasticsearchTemplate elasticsearchTemplate;
-
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
 
     @Override
-    public Response getArticleDetail(Long ArticleId, Integer currentPage, Integer pageSize) {
+    public ArticleDetailVO getArticleDetail(Long ArticleId, Integer currentPage, Integer pageSize) {
         Article article = getById(ArticleId);
         if (article == null) {
-            return Response.notContent();
+            return null;
         }
         ArticleDetailVO articleDetailVO = getArticleDetailVO(article);
 
         List<ArticleCommentVO> articleCommentVOS = articleCommentService.getCommentVOs(ArticleId, ArticleCommentSort.DEFAULT, currentPage, pageSize);
         if (articleCommentVOS == null) {
-            return Response.notContent();
+            return null;
         }
         articleDetailVO.setTotalReplies(Math.toIntExact(article.getTotalReply()));
         articleDetailVO.setTotalComments(articleCommentVOS.size()); // 外层评论数量
         articleDetailVO.setParentCommentListVO(articleCommentVOS);  // 子评论
 
-        return Response.ok(articleDetailVO);
+        return articleDetailVO;
     }
     @Override
     public Response createArticle(String ArticleTitle, String ArticleContent, String ArticleType, List<String> ArticleTags) {
@@ -453,9 +450,6 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         articleDetailVO.setLike(isLike);
         // 收藏业务
         articleDetailVO.setFavorite(favoriteService.isFavoriteArticleByUser(article.getId(), userUtil.getUser().getId()));
-        // 关注业务
-        boolean isFollowed = followService.isFollowedByUser(userUtil.getUser().getId(), article.getUserId());
-        articleDetailVO.setFollowAuthor(isFollowed);
 
         return articleDetailVO;
     }

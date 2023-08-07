@@ -12,7 +12,7 @@ import java.util.List;
 public interface ArticleService extends IService<Article> {
 
     /********************************** 四个 CRUD 方法 **********************************/
-    Response getArticleDetail(Long articleId, Integer currentPage, Integer pageSize);
+    ArticleDetailVO getArticleDetail(Long articleId, Integer currentPage, Integer pageSize);
     Response createArticle(String articleTitle, String articleContent, String articleType, List<String> articleTags);
     Response updateArticle(Long articleId, String newContent);
     Response deleteArticle(Long articleId);

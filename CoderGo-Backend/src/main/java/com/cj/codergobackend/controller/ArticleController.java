@@ -6,6 +6,9 @@ import com.cj.codergobackend.dto.Response;
 import com.cj.codergobackend.pojo.Article;
 import com.cj.codergobackend.service.ArticleCommentService;
 import com.cj.codergobackend.service.ArticleService;
+import com.cj.codergobackend.service.FollowService;
+import com.cj.codergobackend.util.UserUtil;
+import com.cj.codergobackend.vo.ArticleDetailVO;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,11 +26,24 @@ public class ArticleController {
     private ArticleService articleService;
     @Resource
     private ArticleCommentService articleCommentService;
+    @Resource
+    private FollowService followService;
+    @Resource
+    private UserUtil userUtil;
 
     // v1 - 查询文章详情
     @GetMapping("/v1/articles/{articleId}")
     public Response queryArticle(@PathVariable("articleId") Long articleId, @RequestParam Integer commentPage, @RequestParam Integer commentLimit) {
-        return articleService.getArticleDetail(articleId, commentPage, commentLimit);
+        // 文章详情业务
+        ArticleDetailVO articleDetailVO = articleService.getArticleDetail(articleId, commentPage, commentLimit);
+        // 用户关注业务
+        if (userUtil.getUser() == null) {
+            articleDetailVO.setFollowAuthor(false);
+        } else {
+            boolean isFollowed = followService.isFollowedByUser(userUtil.getUser().getId(), articleDetailVO.getAuthorId());
+            articleDetailVO.setFollowAuthor(isFollowed);
+        }
+        return Response.ok(articleDetailVO);
     }
     // v1 - 查询文章列表(mysql)
     @GetMapping("/v1/articles")
