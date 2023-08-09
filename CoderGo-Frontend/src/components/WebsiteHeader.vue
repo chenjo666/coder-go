@@ -35,6 +35,7 @@ const presonEvent = () => {
 }
 // login
 const loginEvent = (result) => {
+    user.value = result
     loginFormVisible.value = false
 }
 // register

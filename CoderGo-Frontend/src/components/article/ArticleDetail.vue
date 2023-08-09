@@ -34,6 +34,7 @@ const markedContent = (content) => {
 //***************************************************** 数据区 ****************************************************/
 // 测试 VO
 const articleDetailVO = ref({
+    
     // 用户服务
     authorId: '1',
     authorName: '段张罗',
@@ -277,8 +278,12 @@ const clickLikeEvent = (objectId, objectType, parentIndex, childIndex) => {
 }
 // （4）评论结果事件
 //  业务逻辑：发布自己的评论，如果成功则以最新排序规则返回评论区数据
-//  评论需要调到最新界面、评论的评论不需要、评论的评论的评论不需要
+//  评论需要调到最新界面、评论的评论即评论的评论的评论需要多加一条记录
 const receiveCommentEvent = (idx1, idx2) => {
+    // 文章评论数量加一
+    articleDetailVO.value.totalComments++
+    articleDetailVO.value.totalReplies++
+    
     console.log("idxs: ", idx1, idx2)
     if (idx1 === -1 && idx2 === -1) {
         clickOrderEvent(COMMENT_SORT[1])
@@ -442,7 +447,7 @@ const getCommentListRequest = (articleId: string, sort: string, page: number, li
 }
 //  (8) 查询评论的评论请求：传入【评论id】，返回【CommentVO[]】
 const getCommentListByCommentRequest = (commentId: string) => {
-    return axios.get(`/articles/v1/articles/comments/${commentId}/comments`)
+    return axios.get(`/article/v1/articles/comments/${commentId}/comments`)
         .then(response => {
             
             if (response.status !== 200) {
@@ -470,17 +475,11 @@ const setCommentContentRequest = (commentId: string, newContent: string) => {
 const delCommentRequest = (articleId: string, commentId: string) => {
     return axios.delete(`/articles/v1/articles/${articleId}/comments/${commentId}`)
         .then(response => {
-            if (response.status !== 200) {
-                errorMsg('网络请求出错!')
-                return false
+            if (response.status === 200 && (response.data.code >= 200 && response.data.code <= 299)) {
+                return true;
             }
-            const ans = response.data
-
-            if (ans.code !== 200) {
-                errorMsg(ans.msg)
-                return false
-            }
-            return true
+            errorMsg(response.status === 200 ? '网络错误' : response.data.msg);
+            return false;
         })
         .catch(error => {
             console.error(error);
@@ -491,17 +490,11 @@ const delCommentRequest = (articleId: string, commentId: string) => {
 const likeArticleRequest = (articleId) => {
     return axios.post(`/article/v1/articles/${articleId}/likes`)
         .then(response => {
-            if (response.status !== 200) {
-                errorMsg('网络请求出错!')
-                return false
+            if (response.status === 200 && (response.data.code >= 200 && response.data.code <= 299)) {
+                return true;
             }
-            const ans = response.data
-
-            if (ans.code !== 200) {
-                errorMsg(ans.msg)
-                return false
-            }
-            return true
+            errorMsg(response.status === 200 ? '网络错误' : response.data.msg);
+            return false;
         })
         .catch(error => {
             console.error(error);
@@ -512,17 +505,11 @@ const likeArticleRequest = (articleId) => {
 const dislikeArticleRequest = (articleId) => {
     return axios.delete(`/article/v1/articles/${articleId}/likes`)
         .then(response => {
-            if (response.status !== 200) {
-                errorMsg('网络请求出错!')
-                return false
+            if (response.status === 200 && (response.data.code >= 200 && response.data.code <= 299)) {
+                return true;
             }
-            const ans = response.data
-
-            if (ans.code !== 200) {
-                errorMsg(ans.msg)
-                return false
-            }
-            return true
+            errorMsg(response.status === 200 ? '网络错误' : response.data.msg);
+            return false;
         })
         .catch(error => {
             console.error(error);
@@ -533,17 +520,11 @@ const dislikeArticleRequest = (articleId) => {
 const likeCommentRequest = (commentId) => {
     return axios.post(`/article/v1/articles/comments/${commentId}/likes`)
         .then(response => {
-            if (response.status !== 200) {
-                errorMsg('网络请求出错!')
-                return false
+            if (response.status === 200 && (response.data.code >= 200 && response.data.code <= 299)) {
+                return true;
             }
-            const ans = response.data
-
-            if (ans.code !== 200) {
-                errorMsg(ans.msg)
-                return false
-            }
-            return true
+            errorMsg(response.status === 200 ? '网络错误' : response.data.msg);
+            return false;
         })
         .catch(error => {
             console.error(error);
@@ -554,17 +535,11 @@ const likeCommentRequest = (commentId) => {
 const dislikeCommentRequest = (commentId) => {
     return axios.delete(`/article/v1/articles/comments/${commentId}/likes`)
         .then(response => {
-            if (response.status !== 200) {
-                errorMsg('网络请求出错!')
-                return false
+            if (response.status === 200 && (response.data.code >= 200 && response.data.code <= 299)) {
+                return true;
             }
-            const ans = response.data
-
-            if (ans.code !== 200) {
-                errorMsg(ans.msg)
-                return false
-            }
-            return true
+            errorMsg(response.status === 200 ? '网络错误' : response.data.msg);
+            return false;
         })
         .catch(error => {
             console.error(error);
@@ -650,6 +625,7 @@ const dislikeCommentRequest = (commentId) => {
                             <!-- 输入框 -->
                             <!-- <el-divider></el-divider> -->
                             <CommentEditor :articleId="articleDetailVO.articleId"  
+                                :username="articleDetailVO.authorName"
                                 :objectId="articleDetailVO.articleId" 
                                 :objectType="'article'" 
                                 :parentIndex="-1" :childIndex="-1"
@@ -700,6 +676,7 @@ const dislikeCommentRequest = (commentId) => {
                                     <!-- CommentEditor 组件 -->
                                     <div :style="{ display: editorVisible[`reply_${index}_-1`] ? 'block' : 'none' }">
                                         <CommentEditor :articleId="articleDetailVO.articleId"  
+                                            :username="articleDetailVO.parentCommentListVO[index].userName"
                                             :objectId="comment.commentId" :objectType="'comment'"
                                             :parentIndex="index" :childIndex="-1" @commentResult="receiveCommentEvent" />
                                     </div>
@@ -736,6 +713,7 @@ const dislikeCommentRequest = (commentId) => {
                                             <div
                                                 :style="{ display: editorVisible[`reply_${index}_${childIndex}`] ? 'block' : 'none' }">
                                                 <CommentEditor :articleId="articleDetailVO.articleId" 
+                                                    :username="comment.childCommentListVO[childIndex].userName"
                                                     :objectId="childComment.commentId" 
                                                     :objectType="'comment'"
                                                     :parentIndex="index" 

@@ -71,7 +71,7 @@ const addArticleRequest = () => {
         "articleType": articleForm.value.articleType,
         "articleTags": articleForm.value.articleTags
     }).then((response) => {
-        if (response.status === 200 && (response.data.code >= 200 || response.data.code <= 299)) {
+        if (response.status === 200 && (response.data.code >= 200 && response.data.code <= 299)) {
             return true;
         }
         errorMsg(response.status === 200 ? '网络错误' : response.data.msg);

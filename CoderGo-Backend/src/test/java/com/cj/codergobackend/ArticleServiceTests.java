@@ -7,6 +7,7 @@ import com.cj.codergobackend.service.ArticleService;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -19,6 +20,8 @@ import java.util.Random;
 public class ArticleServiceTests {
     @Resource
     ArticleService articleService;
+    @Resource
+    private ElasticsearchOperations operations;
 
     @Test
     public void testSearchArticlesByMySQL() {
@@ -34,13 +37,16 @@ public class ArticleServiceTests {
     }
 
     private static final Long[] userIds = new Long[]{
-            1677640320653533186L, 1676909673454575647L, 1676909673454575618L
+            1676909673454575647L, 1676909673454575618L
     };
+    private static final Long[] userIds2 = new Long[]{
+            1677640320653533186L,1676909673454575647L, 1676909673454575618L
+    };
+    //1677640320653533186L,
     @Test
     public void saveBatch() {
         String[] titles = new String[]{"CAP理论", "Netty核心组件",
-                "vue基础功能-基础语法（1）", "vue基础功能-计算属性（2）", "vue基础功能-监听属性（3）", "vue基础功能-属性绑定（4）",
-                "vue基础功能-表单绑定（5）", "vue基础功能-结构渲染（6）", "vue基础功能-时间处理（7）",
+                "vue基础功能-基础语法（1）", "vue基础功能-计算属性（2）", "vue基础功能-监听属性（3）", "vue基础功能-结构渲染（6）", "vue基础功能-时间处理（7）",
                 "NIO编程", "单例模式"
         };
 
@@ -2057,559 +2063,7 @@ public class ArticleServiceTests {
                 "</style>\n" +
                 "```\n" +
                 "\n" +
-                "![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/d98e1f63-c1a8-4b05-a12d-f7abaaf100ac/Untitled.png)", "# 1 条件渲染\n" +
-                "\n" +
-                "## 1.1 v-if 指令\n" +
-                "\n" +
-                "`v-if` 指令用于条件性地渲染一块内容，这块内容只会在指令的表达式返回真值时才被渲染。\n" +
-                "\n" +
-                "```jsx\n" +
-                "<template>\n" +
-                "  <div v-if=\"flag\"></div>\n" +
-                "\t<!-- 渲染结果：<div><div> -->\n" +
-                "</template>\n" +
-                "<script>\n" +
-                "export default {\n" +
-                "  data() {\n" +
-                "    return {\n" +
-                "      flag: true\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n" +
-                "</script>\n" +
-                "```\n" +
-                "\n" +
-                "## 1.2 v-else 指令\n" +
-                "\n" +
-                "`v-else` 指令是为 `v-if` 指令添加的一个 else 块。\n" +
-                "\n" +
-                "```jsx\n" +
-                "<template>\n" +
-                "  <div v-if=\"flag\">Hello, Vue.js</div>\n" +
-                "  <div v-else>Bye, Vue,js</div>\n" +
-                "\t<!-- 渲染结果：<div>Hello, Vue.js</div> -->\n" +
-                "</template>\n" +
-                "<script>\n" +
-                "export default {\n" +
-                "  data() {\n" +
-                "    return {\n" +
-                "      flag: true\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n" +
-                "</script>\n" +
-                "```\n" +
-                "\n" +
-                "## 1.3 v-else-if 指令\n" +
-                "\n" +
-                "`v-else-if` 提供的是相应于 `v-if` 的 else if 块，可以连续多次重复使用。\n" +
-                "\n" +
-                "```jsx\n" +
-                "<template>\n" +
-                "  <div v-if=\"type == 1\">Hello, 1</div>\n" +
-                "  <div v-else-if=\"type == 2\">Hello, 2</div>\n" +
-                "  <div v-else-if=\"type == 3\">Hello, 3</div>\n" +
-                "  <div v-else>Hello, -1</div>\n" +
-                "\t<!-- 渲染结果：<div>Hello, 3</div> -->\n" +
-                "</template>\n" +
-                "<script>\n" +
-                "export default {\n" +
-                "  data() {\n" +
-                "    return {\n" +
-                "      type: 3\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n" +
-                "</script>\n" +
-                "```\n" +
-                "\n" +
-                "## 1.4 v-if、v-else-if、v-else 其它使用场景\n" +
-                "\n" +
-                "### 1.4.1 模板上使用 v-if、v-else-if、v-else\n" +
-                "\n" +
-                "```jsx\n" +
-                "<template v-if=\"templateType == 'user'\">\n" +
-                "  ...\n" +
-                "</template>\n" +
-                "<template v-else-if=\"templateType == 'admin'\">\n" +
-                "  ...\n" +
-                "</template>\n" +
-                "<template v-else=\"templateType == 'visitor'\">\n" +
-                "  ...\n" +
-                "</template>\n" +
-                "```\n" +
-                "\n" +
-                "## 1.5 v-show 指令\n" +
-                "\n" +
-                "`v-show` 指令和 `v-if` 指令的用法基本一样。\n" +
-                "\n" +
-                "```jsx\n" +
-                "<template>\n" +
-                "  <div v-show=\"ok\">hello, ok</div>\n" +
-                "\t<!-- 渲染结果：<div>hello, ok</div> -->\n" +
-                "  <div v-show=\"no\">hello, no</div>\n" +
-                "\t<!-- 渲染结果：<div style=\"display: none;\">hello, no</div> -->\n" +
-                "</template>\n" +
-                "<script>\n" +
-                "export default {\n" +
-                "  data() {\n" +
-                "    return {\n" +
-                "      ok: true,\n" +
-                "      no: false\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n" +
-                "</script>\n" +
-                "```\n" +
-                "\n" +
-                "## 1.6 v-if 和 v-show 对比\n" +
-                "\n" +
-                "v-if 指令和 v-show 指令的区别：\n" +
-                "\n" +
-                "1. 渲染差异\n" +
-                "    - v-if 指令属于“**真实**”渲染，根据表达式的真或假来决定 DOM 中是否存在该元素。当表达式为真时，DOM 中存在该元素；表达式为假时，DOM 中无该元素。\n" +
-                "    - v-show 指令属于“**虚假**”渲染，无论表达式为真或假，DOM 中都会存在该元素，表达式的值决定了 css 中 style 属性的取值。当表达式为真时，该元素的 style 属性取默认值，当表达式为假时，该元素的 style 属性为 “display: none”。\n" +
-                "2. 使用差异\n" +
-                "    - v-if 指令可以使用在模板元素（<template>）上。\n" +
-                "    - v-show 指令不可以使用在模板元素（<template>）上。\n" +
-                "\n" +
-                "总的来说，v-if 指令的切换开销大，v-show 指令的初始化渲染开销大。\n" +
-                "\n" +
-                "# 2 列表渲染\n" +
-                "\n" +
-                "## 2.1 v-for 指令\n" +
-                "\n" +
-                "> v-for 指令用于基于原始数据多次渲染元素或模板块。\n" +
-                "> \n" +
-                "\n" +
-                "v-for 指令语法格式如下：\n" +
-                "\n" +
-                "```tsx\n" +
-                "<div v-for=\"item in items\">  \n" +
-                "\t{{ item.text }}\n" +
-                "</div>\n" +
-                "```\n" +
-                "\n" +
-                "其中 items 参数可以为：Array | Object | number | string | Iterable\n" +
-                "\n" +
-                "## 2.2 v-for 遍历的方式\n" +
-                "\n" +
-                "### 2.2.1 v-for 遍历 Array\n" +
-                "\n" +
-                "```tsx\n" +
-                "<template>\n" +
-                "  <div v-for=\"num in nums\">\n" +
-                "    {{ num }}\n" +
-                "  </div>\n" +
-                "</template>\n" +
-                "<script>\n" +
-                "export default {\n" +
-                "  data() {\n" +
-                "    return {\n" +
-                "      nums: [1, 2, 4, 6, 9]\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n" +
-                "</script>\n" +
-                "```\n" +
-                "\n" +
-                "### 2.2.2 v-for 遍历 Object\n" +
-                "\n" +
-                "```tsx\n" +
-                "<template>\n" +
-                "  <!-- 形式1：遍历对象的所有属性的值 -->\n" +
-                "  <div v-for=\"val in obj\">\n" +
-                "    {{ val }}\n" +
-                "  </div>\n" +
-                "\t<!-- 渲染结果：\n" +
-                "\t\t\tzhangsan\n" +
-                "\t\t\t19\n" +
-                "\t\t\t男\n" +
-                "\t-->\n" +
-                "\n" +
-                "  <!-- 形式2：遍历对象的所有属性及其值 -->\n" +
-                "  <!-- 参数：值，属性(键) -->\n" +
-                "  <div v-for=\"(val, key) in obj\">\n" +
-                "    {{ key }} : {{val}}\n" +
-                "  </div>\n" +
-                "\t<!-- 渲染结果：\n" +
-                "\t\t\tname : zhangsan\n" +
-                "\t\t\tage : 19\n" +
-                "\t\t\tsex : 男\n" +
-                "\t-->\n" +
-                "\n" +
-                "  <!-- 形式3：遍历对象的所有属性及其值及其下标 -->\n" +
-                "  <!-- 参数：值，属性(键)，下标 -->\n" +
-                "  <div v-for=\"(val, key, index) in obj\">\n" +
-                "    {{ index }}, {{ key }} : {{ val }}\n" +
-                "  </div>\n" +
-                "\t<!-- 渲染结果：\n" +
-                "\t\t\t0, name : zhangsan\n" +
-                "\t\t\t1, age : 19\n" +
-                "\t\t\t2, sex : 男\n" +
-                "\t-->\n" +
-                "</template>\n" +
-                "<script>\n" +
-                "export default {\n" +
-                "  data() {\n" +
-                "    return {\n" +
-                "      obj: {\n" +
-                "        name: 'zhangsan',\n" +
-                "        age: 19,\n" +
-                "        sex: '男'\n" +
-                "      }\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n" +
-                "</script>\n" +
-                "```\n" +
-                "\n" +
-                "### 2.2.3 v-for 遍历 number\n" +
-                "\n" +
-                "```tsx\n" +
-                "<template>\n" +
-                "  <!-- 注意：n从1开始 -->\n" +
-                "  <span v-for=\"n in 5\">\n" +
-                "    {{ n }}\n" +
-                "  </span>\n" +
-                "\t<!-- 渲染结果：12345 -->\n" +
-                "</template>\n" +
-                "```\n" +
-                "\n" +
-                "### 2.2.4 v-for 遍历 string\n" +
-                "\n" +
-                "```tsx\n" +
-                "<template>\n" +
-                "  <!-- 形式1：遍历字符串单个字符 -->\n" +
-                "  <span v-for=\"ch in 'HelloVue'\">\n" +
-                "    {{ ch }}\n" +
-                "  </span>\n" +
-                "\t<!-- 渲染结果：HelloVue -->\n" +
-                "\n" +
-                "  <!-- 形式2：遍历字符串单个字符及其下标-->\n" +
-                "  <span v-for=\"(ch, index) in 'HelloVue'\">\n" +
-                "    {{ index }}{{ ch }} {{}}\n" +
-                "  </span>\n" +
-                "  <!-- 渲染结果：0H 1e 2l 3l 4o 5V 6u 7e-->\n" +
-                "</template>\n" +
-                "```\n" +
-                "\n" +
-                "### 2.2.5 v-for 遍历 Iterable\n" +
-                "\n" +
-                "## 2.3 v-for 其它使用场景\n" +
-                "\n" +
-                "### 2.3.1 模板上使用 v-for\n" +
-                "\n" +
-                "```tsx\n" +
-                "<template v-for=\"todo in todos\" :key=\"todo.name\">\n" +
-                "  <li>{{ todo.name }}</li>\n" +
-                "</template>\n" +
-                "```\n" +
-                "\n" +
-                "### 2.3.2 组件上使用 v-for\n" +
-                "\n" +
-                "```tsx\n" +
-                "<MyComponent v-for=\"item in items\" :key=\"item.id\" />\n" +
-                "```\n" +
-                "\n" +
-                "## 2.4 v-if 和 v-for 对比\n" +
-                "\n" +
-                "v-if 的优先级比 v-for 优先级更高。\n" +
-                "\n" +
-                "```tsx\n" +
-                "<!-- 一个错误的思路，v-if优先级更高，访问不到v-for中的数据 -->\n" +
-                "<span v-for=\"n in nums\" v-if=\"n % 2 == 0\">\n" +
-                "\t{{ n }}\n" +
-                "</span>\n" +
-                "```\n" +
-                "\n" +
-                "将上述更改：\n" +
-                "\n" +
-                "```tsx\n" +
-                "<template>\n" +
-                "  <span v-for=\"n in nums\">\n" +
-                "    <span v-if=\"n % 2 == 0\">\n" +
-                "      {{ n }}\n" +
-                "    </span>\n" +
-                "  </span>\n" +
-                "\t<!-- 渲染结果：42 -->\n" +
-                "</template>\n" +
-                "<script>\n" +
-                "export default {\n" +
-                "  data() {\n" +
-                "    return {\n" +
-                "      nums: [1, 3, 4, 7, 2, 7]\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n" +
-                "</script>\n" +
-                "```", "# 1 事件处理概述\n" +
-                "\n" +
-                "## 1.1 事件处理简介\n" +
-                "\n" +
-                "在 Vue 中，可以使用 `v-on` 指令（简写 `@`）来监听 DOM 事件，并在事件触发时执行对应的 JavaScript 方法。\n" +
-                "\n" +
-                "用法：`v-on:click=”methodName”` 或 `@click=“handler”` 。\n" +
-                "\n" +
-                "## 1.2 v-on 指令\n" +
-                "\n" +
-                "给元素绑定事件监听器。\n" +
-                "\n" +
-                "- **缩写：**`@`\n" +
-                "- **期望的绑定值类型：**`Function | Inline Statement | Object (不带参数)`\n" +
-                "- **参数：**`event` (使用对象语法则为可选项)\n" +
-                "- **修饰符：**\n" +
-                "    - `.stop` ——调用 `event.stopPropagation()`。\n" +
-                "    - `.prevent` ——调用 `event.preventDefault()`。\n" +
-                "    - `.capture` ——在捕获模式添加事件监听器。\n" +
-                "    - `.self` ——只有事件从元素本身发出才触发处理函数。\n" +
-                "    - `.{keyAlias}` ——只在某些按键下触发处理函数。\n" +
-                "    - `.once` ——最多触发一次处理函数。\n" +
-                "    - `.left` ——只在鼠标左键事件触发处理函数。\n" +
-                "    - `.right` ——只在鼠标右键事件触发处理函数。\n" +
-                "    - `.middle` ——只在鼠标中键事件触发处理函数。\n" +
-                "    - `.passive` ——通过 `{ passive: true }` 附加一个 DOM 事件。\n" +
-                "- **详细信息**\n" +
-                "    \n" +
-                "    事件类型由参数来指定。表达式可以是一个方法名，一个内联声明，如果有修饰符则可省略。\n" +
-                "    \n" +
-                "    当用于普通元素，只监听**原生 DOM 事件**。当用于自定义元素组件，则监听子组件触发的**自定义事件**。\n" +
-                "    \n" +
-                "    当监听原生 DOM 事件时，方法接收原生事件作为唯一参数。如果使用内联声明，声明可以访问一个特殊的 `$event` 变量：`v-on:click=\"handle('ok', $event)\"`。\n" +
-                "    \n" +
-                "    `v-on` 还支持绑定不带参数的事件/监听器对的对象。请注意，当使用对象语法时，不支持任何修饰符。\n" +
-                "    \n" +
-                "\n" +
-                "# 2 事件处理器\n" +
-                "\n" +
-                "## 2.1 **内联事件处理器**\n" +
-                "\n" +
-                "事件被触发时执行的内联 JavaScript 语句 (与 `onclick` 类似)。\n" +
-                "\n" +
-                "```tsx\n" +
-                "<template>\n" +
-                "  <button @click=\"count++\">点击count+1</button>\n" +
-                "  <p>count: {{ count }}</p>\n" +
-                "</template>\n" +
-                "<script>\n" +
-                "export default {\n" +
-                "  data() {\n" +
-                "    return {\n" +
-                "      count: 0\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n" +
-                "</script>\n" +
-                "```\n" +
-                "\n" +
-                "## 2.2 **方法事件处理器**\n" +
-                "\n" +
-                "```tsx\n" +
-                "<template>\n" +
-                "  <button @click=\"greet\">Greet</button>\n" +
-                "  <span>count: {{ count }}</span>\n" +
-                "</template>\n" +
-                "<script>\n" +
-                "export default {\n" +
-                "  data() {\n" +
-                "    return {\n" +
-                "      name: 'Vue.js',\n" +
-                "      count: 0\n" +
-                "    }\n" +
-                "  },\n" +
-                "  methods: {\n" +
-                "    greet(event) {\n" +
-                "      this.count++\n" +
-                "      alert(`Hello ${this.name}!`)\n" +
-                "      if (event) {\n" +
-                "        alert(event.target.tagName)\n" +
-                "      }\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n" +
-                "</script>\n" +
-                "```\n" +
-                "\n" +
-                "# 3 内联事件处理器的应用\n" +
-                "\n" +
-                "## 3.1 ****在内联****事件****处理器中调用方法****\n" +
-                "\n" +
-                "```tsx\n" +
-                "<template>\n" +
-                "  <button @click=\"say('hello')\">button: {{ msg }}</button>\n" +
-                "</template>\n" +
-                "<script>\n" +
-                "export default {\n" +
-                "  data() {\n" +
-                "    return {\n" +
-                "      msg: ''\n" +
-                "    }\n" +
-                "  },\n" +
-                "  methods: {\n" +
-                "    say(message) {\n" +
-                "      this.msg = message\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n" +
-                "</script>\n" +
-                "```\n" +
-                "\n" +
-                "## 3.2 ****在内联事件处理器中访问事件参数****\n" +
-                "\n" +
-                "```tsx\n" +
-                "<template>\n" +
-                "  <!-- 1. 使用特殊的 $event 变量 -->\n" +
-                "  <button @click=\"warn('Form cannot be submitted yet.', $event)\">\n" +
-                "    Submit\n" +
-                "  </button>\n" +
-                "\n" +
-                "  <!-- 2. 使用内联箭头函数 -->\n" +
-                "  <button @click=\"(event) => warn('Form cannot be submitted yet.', event)\">\n" +
-                "    Submit\n" +
-                "  </button>\n" +
-                "</template>\n" +
-                "<script>\n" +
-                "export default {\n" +
-                "  methods: {\n" +
-                "    warn(message, event) {\n" +
-                "      // 这里可以访问 DOM 原生事件\n" +
-                "      if (event) {\n" +
-                "        event.preventDefault()\n" +
-                "      }\n" +
-                "      alert(message)\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n" +
-                "</script>\n" +
-                "```\n" +
-                "\n" +
-                "# 4 事件修饰符\n" +
-                "\n" +
-                "## 4.1 普通事件修饰符\n" +
-                "\n" +
-                "Vue 为 `v-on` 提供了**普通事件修饰符**。修饰符是用 `.` 表示的指令后缀，包含以下这些：\n" +
-                "\n" +
-                "- `.stop` ：阻止事件冒泡，即阻止事件传播。\n" +
-                "- `.prevent` ：\n" +
-                "- `.self`\n" +
-                "- `.capture`\n" +
-                "- `.once`\n" +
-                "- `.passive`\n" +
-                "\n" +
-                "```tsx\n" +
-                "<template>\n" +
-                "  <div @click=\"doThis\">\n" +
-                "    <button @click.stop=\"doThat\">click</button>\n" +
-                "    <!-- 阻止了事件冒泡，=> doThat-->\n" +
-                "  </div>\n" +
-                "</template>\n" +
-                "<script>\n" +
-                "export default {\n" +
-                "  methods: {\n" +
-                "    doThis() {\n" +
-                "      console.log('doThis')\n" +
-                "    },\n" +
-                "    doThat() {\n" +
-                "      console.log('toThat')\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n" +
-                "</script>\n" +
-                "```\n" +
-                "\n" +
-                "## 4.2 键盘按键修饰符\n" +
-                "\n" +
-                "在监听键盘按键事件时，常常会用到键盘按键修饰符来检查键盘按键事件。\n" +
-                "\n" +
-                "```tsx\n" +
-                "<template>\n" +
-                "  <label for=\"button\">按下Enter键发出信息</label>\n" +
-                "\t<!-- 当且仅当按下'enter'键时才调用'submit' -->\n" +
-                "  <input id=\"button\" @keyup.enter=\"submit\"/>\n" +
-                "  <div>message: {{ msg }}</div>\n" +
-                "</template>\n" +
-                "<script>\n" +
-                "export default {\n" +
-                "  data() {   \n" +
-                "    return {\n" +
-                "      msg: ''\n" +
-                "    }\n" +
-                "  },\n" +
-                "  methods: {\n" +
-                "    submit() {\n" +
-                "      this.msg = document.getElementById(\"button\").value\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n" +
-                "</script>\n" +
-                "```\n" +
-                "\n" +
-                "![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/0a10a8df-17c4-4254-9c28-ac8eb66f970e/Untitled.png)\n" +
-                "\n" +
-                "### 4.2.1 常用键盘按键别名\n" +
-                "\n" +
-                "Vue 为一些常用的按键提供了别名：\n" +
-                "\n" +
-                "- `.enter`\n" +
-                "- `.tab`\n" +
-                "- `.delete` (捕获“Delete”和“Backspace”两个按键)\n" +
-                "- `.esc`\n" +
-                "- `.space`\n" +
-                "- `.up`\n" +
-                "- `.down`\n" +
-                "- `.left`\n" +
-                "- `.right`\n" +
-                "\n" +
-                "### 4.2.2 系统键盘按键修饰符\n" +
-                "\n" +
-                "你可以使用以下系统按键修饰符来触发鼠标或键盘事件监听器，只有当按键被按下时才会触发。\n" +
-                "\n" +
-                "- `.ctrl`\n" +
-                "- `.alt`\n" +
-                "- `.shift`\n" +
-                "- `.meta`\n" +
-                "\n" +
-                "## 4.3 鼠标按键修饰符\n" +
-                "\n" +
-                "鼠标按键修饰符是用来监听鼠标按键事件的。\n" +
-                "\n" +
-                "鼠标按键修饰符有三种：\n" +
-                "\n" +
-                "- `.left`\n" +
-                "- `.right`\n" +
-                "- `.middle`\n" +
-                "\n" +
-                "```tsx\n" +
-                "<template>\n" +
-                "  <label>单击下方区域，左键变红，右键变蓝</label>\n" +
-                "  <div :style=\"baseStyle\" @mousedown.left=\"toRed\" @mousedown.right=\"toBlue\"></div>\n" +
-                "</template>\n" +
-                "<script>\n" +
-                "export default {\n" +
-                "  data() {   \n" +
-                "    return {\n" +
-                "      baseStyle: {\n" +
-                "        width: '200px',\n" +
-                "        height: '200px',\n" +
-                "        backgroundColor: 'black'\n" +
-                "      }\n" +
-                "    }\n" +
-                "  },\n" +
-                "  methods: {\n" +
-                "    toRed() {\n" +
-                "      this.baseStyle.backgroundColor = 'red'\n" +
-                "    },\n" +
-                "    toBlue() {\n" +
-                "      this.baseStyle.backgroundColor = 'blue'\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n" +
-                "</script>\n" +
-                "```\n" +
-                "\n" +
-                "![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/a2464667-63bf-4230-96e4-f1dffde8831e/Untitled.png)\n" +
-                "\n" +
-                "![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/4172b89c-2153-40e7-82a6-62f1bdeba80e/Untitled.png)", "## 基本概念\n" +
+                "![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/d98e1f63-c1a8-4b05-a12d-f7abaaf100ac/Untitled.png)", "## 基本概念\n" +
                 "\n" +
                 "在  Java 中，NIO 代表非阻塞式 IO（Non-blocking IO），它是 Java 标准库提供的一种处理输入输出的方式。\n" +
                 "\n" +
@@ -3356,8 +2810,8 @@ public class ArticleServiceTests {
                 "1. Spring 框架中的 Bean 默认都是单例的，这样可以保证在整个应用程序中只有一个实例，避免了重复创建和浪费资源。\n" +
                 "2. Hibernate 框架中的 SessionFactory 也使用了单例模式，这样可以确保在整个应用程序中只有一个 SessionFactory 实例，从而提高性能并避免出现线程安全问题。\n" +
                 "3. Log4j 日志框架中的 LogManager 也使用了单例模式，这样可以确保在整个应用程序中只有一个 LogManager 实例，从而避免了重复创建和浪费资源。"};
-        String[] type = new String[]{"architecture", "backend", "frontend", "frontend", "frontend", "frontend", "frontend", "frontend", "frontend", "backend", "design"};
-        String[] tags = new String[]{"CAP,分布式", "Netty", "vue,基础语法","vue,基础语法","vue,基础语法","vue,基础语法","vue,基础语法","vue,基础语法","vue,基础语法", "nio", "设计模式,创建者模式,单例模式"};
+        String[] type = new String[]{"architecture", "backend", "frontend", "frontend", "frontend",  "frontend", "frontend", "backend", "design"};
+        String[] tags = new String[]{"CAP,分布式", "Netty", "vue,基础语法","vue,基础语法","vue,基础语法","vue,基础语法","vue,基础语法", "nio", "设计模式,创建者模式,单例模式"};
 
         insertOneRecordToMySQL(titles, content, type, tags);
     }
@@ -3366,21 +2820,24 @@ public class ArticleServiceTests {
         Random random = new Random();
         List<Article> list = new ArrayList<>();
         int n = t.length;
-        for (int i = 0; i < n; i++) {
-            Article article = new Article();
-            article.setUserId(userIds[random.nextInt(3)]);
-            article.setTitle(t[i]);
-            article.setContent(c[i]);
-            article.setCreatedAt(randomDate());
-            article.setIsGem(0);
-            article.setIsTop(0);
-            article.setType(types[i]);
-            article.setTags(tags[i]);
-            article.setScore(0.0);
-            article.setTotalReply(0L);
-            list.add(article);
+        for (int j = 0; j < 1; j++) {
+            for (int i = 0; i < n; i++) {
+                Article article = new Article();
+                article.setUserId(userIds2[random.nextInt(3)]);
+                article.setTitle(t[i]);
+                article.setContent(c[i]);
+                article.setCreatedAt(randomDate());
+                article.setIsGem(0);
+                article.setIsTop(0);
+                article.setType(types[i]);
+                article.setTags(tags[i]);
+                article.setScore(random.nextDouble(100));
+                article.setTotalReply(0L);
+                list.add(article);
+            }
         }
-        articleService.saveBatch(list);
+        operations.save(list);
+//        articleService.saveBatch(list);
     }
 
     @Test

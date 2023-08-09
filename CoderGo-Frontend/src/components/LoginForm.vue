@@ -101,7 +101,7 @@ const loginRequest = () => {
             successMsg(res.data.msg)
             const user = res.data.data
             localStorage.setItem('user', JSON.stringify(user))
-            emit('loginResult', user);
+            emit('loginResult', JSON.stringify(user));
             clearForm()
         } else {
             errorMsg('服务器发生未知错误！')

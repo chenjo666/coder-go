@@ -49,6 +49,7 @@ public class AIChatUtil {
                     .execute()
                     .body();
             JSONObject jsonObject = JSONUtil.parseObj(body);
+            System.out.println(jsonObject);
             return jsonObjectToAIResponse(jsonObject);
         } catch (HttpException | ConvertException e) {
             return null;

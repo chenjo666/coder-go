@@ -25,6 +25,9 @@ const object = defineProps({
   articleId: {
     type: String
   },
+  username: {
+    type: String
+  },
   objectId: {
     type: String
   },
@@ -43,7 +46,7 @@ const object = defineProps({
 const clickSendCommentEvent = () => {
   console.log('send comment:' + object.objectId + ", " + object.objectType)
   console.log('commentEditor: ' + object.parentIndex + ", " + object.childIndex)
-  addCommentRequest(object.articleId, object.objectId, object.objectType, commentContent.value)
+  addCommentRequest(object.articleId,  object.objectId, object.objectType, object.username, commentContent.value)
     .then(res => {
       if (res != null) {
         commentContent.value = ''
@@ -56,8 +59,9 @@ const clickSendCommentEvent = () => {
 }
 
 // 发送评论请求
-const addCommentRequest = (articleId: string | undefined, objectId: string | undefined, objectType: string | undefined, content: string) => {
-  return axios.post(`/article/v1/articles/${articleId}/comments`, { "objectId": objectId, "objectType": objectType, "content": content })
+const addCommentRequest = (articleId: string | undefined, objectId: string | undefined, objectType: string | undefined, username: string | undefined, content: string) => {
+  let targetContent = objectType === 'comment' ?  '@' + username + ' ' + content : content;
+  return axios.post(`/article/v1/articles/${articleId}/comments`, { "objectId": objectId, "objectType": objectType, "content": targetContent })
     .then(response => {
       if (response.status === 200 && (response.data.code >= 200 || response.data.code <= 299)) {
         return true;

@@ -50,6 +50,7 @@ public class ArticleCommentServiceImpl extends ServiceImpl<ArticleCommentMapper,
         for (ArticleComment articleComment : articleComments) {
             childCommentListVO.add(getCommentVO(articleComment));
         }
+        childCommentListVO.sort((o1, o2) -> o2.getCommentCreatedAt().compareTo(o1.getCommentCreatedAt()));
         return Response.ok(childCommentListVO);
     }
 

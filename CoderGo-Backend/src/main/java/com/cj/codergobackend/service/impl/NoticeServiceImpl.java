@@ -115,7 +115,7 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
         noticeVO.setUserAvatar(user.getAvatar());
 
         if (!notice.getNoticeType().equals(NoticeType.USER_FOLLOW)) {
-            Article article = articleService.getById(notice.getArticleId());
+            Article article = articleService.getByIdFromEs(notice.getArticleId());
             noticeVO.setArticleId(article.getId());
             noticeVO.setArticleTitle(article.getTitle());
         }

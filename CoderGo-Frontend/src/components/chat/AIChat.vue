@@ -69,7 +69,7 @@ const flowShowContent = (messageIndex, content) => {
 
     const intervalId = setInterval(() => {
         if (idx < text.length) {
-            chatCompletionVO.value.messageVOList[messageIndex].content += text.charAt(idx);
+            chatCompletionVO.value.messageListVO[messageIndex].content += text.charAt(idx);
             idx++;
         } else {
             clearInterval(intervalId); // 清除interval
@@ -123,18 +123,21 @@ const chatCompletionVO = ref({
     messageListVO: [
         {
             messageId: '124214124',
+            messageTargetId: '121',
             role: 'user',
             content: 'hello',
             createdAt: '2020-01-02 1:01:02'
         },
         {
             messageId: '124124',
+            messageTargetId: '121',
             role: 'user',
             content: 'hello',
             createdAt: '2020-01-02 1:02:02'
         },
         {
             messageId: '12312312',
+            messageTargetId: '121',
             role: 'user',
             content: '恰噶',
             createdAt: '2020-01-02 1:03:02'
@@ -150,6 +153,7 @@ interface ConversationVO {
 // MessageVO
 interface MessageVO {
     messageId: string,
+    messageTargetId: string,
     role: string,
     content: string,
     createdAt: string
@@ -266,6 +270,7 @@ const clickSendMessageEvent = (index) => {
     // 1. 创建一个自身对象
     const userMessageVO: MessageVO = {
         messageId: '',
+        messageTargetId: messageTargetId,
         role: 'user',
         content:  messageContent.value,
         createdAt: formatDate(new Date())

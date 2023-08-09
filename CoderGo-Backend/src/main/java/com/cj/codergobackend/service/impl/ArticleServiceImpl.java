@@ -68,10 +68,9 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
     @Override
     public ArticleDetailVO getArticleDetail(Long ArticleId, Integer currentPage, Integer pageSize) {
-        Article article = getById(ArticleId);
-        if (article == null) {
-            return null;
-        }
+        Article article = elasticsearchTemplate.searchOne(NativeQuery.builder()
+                .withQuery(q -> q.term(m -> m.field("id").value(ArticleId)))
+                .build(), Article.class).getContent();
         ArticleDetailVO articleDetailVO = getArticleDetailVO(article);
 
         List<ArticleCommentVO> articleCommentVOS = articleCommentService.getCommentVOs(ArticleId, ArticleCommentSort.DEFAULT, currentPage, pageSize);
@@ -197,9 +196,9 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
             return Response.badRequest();
         }
         // 如果达到查询缓存条件，则查询缓存
-        if (type.equals(ArticleType.ALL) && StringUtils.isBlank(key)) {
-            return Response.ok(homeCache.get(getCacheKey(order, page, limit)));
-        }
+//        if (type.equals(ArticleType.ALL) && StringUtils.isBlank(key)) {
+//            return Response.ok(homeCache.get(getCacheKey(order, page, limit)));
+//        }
         // 否则加载数据库
         Map<String, Object> data = searchArticlesHelper(type, order, key, page, limit);
         return Response.ok(data);
@@ -381,15 +380,21 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         // mysql
         update(new UpdateWrapper<Article>().setSql("total_reply = total_reply + 1").eq("id", articleId));
         // es
+        Article article = getByIdFromEs(articleId);
+        article.setTotalReply(article.getTotalReply() + 1);
+        elasticsearchTemplate.update(article);
+        return true;
+    }
+
+    @Override
+    public Article getByIdFromEs(Long articleId) {
+        // es
         Query query = NativeQuery.builder()
                 .withQuery(q -> q.term(m -> m.field("id").value(articleId)))
                 .build();
         SearchHit<Article> search = elasticsearchTemplate.searchOne(query, Article.class);
         assert search != null;
-        Article article = search.getContent();
-        article.setTotalReply(article.getTotalReply() + 1);
-        elasticsearchTemplate.update(article);
-        return true;
+        return search.getContent();
     }
 
     /****************************************三个视图对象*****************************************/

@@ -1,6 +1,7 @@
 package com.cj.codergobackend;
 
 import com.alibaba.fastjson2.JSON;
+import com.cj.codergobackend.constants.ArticleType;
 import com.cj.codergobackend.pojo.Article;
 import com.cj.codergobackend.pojo.User;
 import com.cj.codergobackend.service.ArticleService;
@@ -97,6 +98,7 @@ public class ElasticsearchTests {
         operations.save(articles);
     }
 
+    // 删除索引
     @Test
     public void deleteIndex() {
         operations.indexOps(Article.class).delete();
@@ -105,7 +107,14 @@ public class ElasticsearchTests {
     @Test
     public void copyDataFromMysql() {
         List<Article> list = articleService.list();
-        operations.save(list);
+        List<Article> ans = new ArrayList<>();
+        for (Article article : list) {
+            if (article.getType().equals(ArticleType.FRONTEND) && !article.getTitle().contains("（3）")) {
+                continue;
+            }
+            ans.add(article);
+        }
+        operations.save(ans);
     }
 
     @Test
@@ -167,5 +176,14 @@ public class ElasticsearchTests {
         Article article = search.getContent();
         article.setTotalReply(article.getTotalReply() + 1);
         operations.update(article);
+    }
+
+    @Test
+    public void testSearch() {
+
+        SearchHit<Article> hit = operations.searchOne(NativeQuery.builder()
+                .withQuery(q -> q.term(m -> m.field("id").value(1688560824121942023L)))
+                .build(), Article.class);
+        System.out.println(hit.getContent());
     }
 }

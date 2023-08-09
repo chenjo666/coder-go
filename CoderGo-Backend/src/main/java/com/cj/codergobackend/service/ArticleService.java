@@ -79,4 +79,8 @@ public interface ArticleService extends IService<Article> {
 
     // 评论数加一
     boolean incTotalReply(Long articleId);
+
+
+    // 查找文章
+    Article getByIdFromEs(Long articleId);
 }
