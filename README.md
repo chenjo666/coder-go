@@ -1,5 +1,5 @@
 # coder-go
-CoderGo 是一个基于 Vue3 + SpringBoot3 进行搭建的开源技术交流社区项目。
+CoderGo 是一个基于 Vue3 + SpringBoot3 进行搭建的技术交流社区项目。
 ## 功能模块图
 一个简单的功能模块图，线条描述了业务功能之间的依赖关系
 ![](docs/codergo-架构图.png)
